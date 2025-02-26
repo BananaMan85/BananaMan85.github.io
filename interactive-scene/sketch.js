@@ -50,8 +50,8 @@ function setup() {
   aimColor = color(255,255,255);
   aimColor.setAlpha(128);
   
-  aimX = random(x-size/2, x+size/2)
-  aimY = random(y-size/2, y+size/2)
+  aimX = random(x-size/2, x+size/2);
+  aimY = random(y-size/2, y+size/2);
 }
 
 function draw() {
@@ -77,7 +77,7 @@ function runScenes(){
 function drawColoredTarget() {
   for (let i = 0; i < theColors.length; i++){
     fill(theColors[i]);
-    circle(x, y, size - i*(size/10))
+    circle(x, y, size - i*(size/10));
   }
 }
 
@@ -107,7 +107,7 @@ function pickAccuracy(){
 
 function drawAim(){
   fill(aimColor);
-  circle(aimX, aimY, accuracy)
+  circle(aimX, aimY, accuracy);
   
   speedX = (mouseX - aimX) * inertia;
   speedY = (mouseY - aimY) * inertia;
