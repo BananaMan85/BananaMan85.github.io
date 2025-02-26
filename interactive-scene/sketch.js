@@ -36,12 +36,16 @@ let noiseIncrement = 0.03;
 let driftX = 0;
 let driftY = 0;
 let wander = 1;
+let shotX;
+let shotY;
+let shots = [];
 
 let aimColor;
 
 let drawColoredTargetScene = true;
 let pickAccuracyScene = true;
 let drawAimScene = false;
+let drawShotsScene = true;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -71,6 +75,9 @@ function runScenes(){
   }
   if (drawAimScene){
     drawAim();
+  }
+  if (drawShotsScene){
+    drawShotsScene();
   }
 }
 
@@ -129,11 +136,31 @@ function drawAim(){
   // console.log(dist(mouseX, mouseY, aimX, aimY) < accuracy)
 }
 
+function shoot(){
+  fill("black");
+  shotX = random(aimX, aimX + (((accuracy/2)**2)**(1/2) * cos(random(0, 2*PI))));
+  shotY = random(aimY, aimY + (((accuracy/2)**2)**(1/2) * sin(random(0, 2*PI))));
+
+  console.log("X: " + shotX);
+  console.log("Y: " + shotY);
+
+  shots += [shotX, shotY];
+  circle(shotX, shotY, 10);
+
+}
+
+function drawShots(){
+  for (let i = 0; i <= shots.length; i++){
+    circle(i[0], i[1], 10);
+  }
+}
+
 
 function keyPressed(){
   if (!keyJustPressed){
     keyJustPressed = true;
   }
+  shoot();
 }
 
 function windowResized() {
