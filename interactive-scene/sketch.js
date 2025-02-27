@@ -151,7 +151,7 @@ function shoot(){
 
 function drawShots(){
   for (let i = 0; i <= shots.length; i++){
-    circle(i[0], i[1], 10);
+    circle(shots[i][0], shots[i][1], 10);
   }
 }
 
