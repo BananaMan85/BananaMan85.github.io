@@ -44,7 +44,7 @@ let aimColor;
 
 let drawColoredTargetScene = true;
 let pickAccuracyScene = true;
-let drawAimScene = false;
+let drawAimScene = true;
 let drawShotsScene = true;
 
 function setup() {
@@ -77,7 +77,7 @@ function runScenes(){
     drawAim();
   }
   if (drawShotsScene){
-    drawShotsScene();
+    drawShots();
   }
 }
 
@@ -146,12 +146,13 @@ function shoot(){
 
   shots += [shotX, shotY];
   circle(shotX, shotY, 10);
+  console.log(shots);
 
 }
 
 function drawShots(){
-  for (let i = 0; i <= shots.length; i++){
-    circle(shots[i][0], shots[i][1], 10);
+  for (let i = 0; i < shots.length; i++){
+    circle(int(shots[i][0]), int(shots[i][1], 10), 10);
   }
 }
 
