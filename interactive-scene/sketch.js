@@ -5,6 +5,8 @@
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
+//https://stackoverflow.com/questions/32642399/simplest-way-to-plot-points-randomly-inside-a-circle
+
 
 let theColors = [
   "white",
@@ -35,16 +37,14 @@ let noiseOffsetY = 1000; // Seperate noiseX from noiseY
 let noiseIncrement = 0.03;
 let driftX = 0;
 let driftY = 0;
-let wander = 1;
-let shotX;
-let shotY;
+let wander = 0;
 let shots = [];
 
 let aimColor;
 
 let drawColoredTargetScene = true;
 let pickAccuracyScene = true;
-let drawAimScene = true;
+let drawAimScene = false;
 let drawShotsScene = true;
 
 function setup() {
@@ -138,24 +138,29 @@ function drawAim(){
 
 function shoot(){
   fill("black");
-  shotX = random(aimX, aimX + (((accuracy/2)**2)**(1/2) * cos(random(0, 2*PI))));
-  shotY = random(aimY, aimY + (((accuracy/2)**2)**(1/2) * sin(random(0, 2*PI))));
+
+  let angle = random(0, 2*PI);
+  let pointRadius = random(0, (accuracy/2)**2);
+
+  let shotX = pointRadius**(1/2) * cos(angle) + aimX;
+  let shotY = pointRadius**(1/2) * sin(angle) + aimY;
 
   console.log("X: " + shotX);
   console.log("Y: " + shotY);
 
-  shots += [shotX, shotY];
-  circle(shotX, shotY, 10);
+  append(shots, shotX);
+  append(shots, shotY);
+
   console.log(shots);
 
 }
 
 function drawShots(){
-  for (let i = 0; i < shots.length; i++){
-    circle(int(shots[i][0]), int(shots[i][1], 10), 10);
+  fill("black");
+  for (let i = 0; i < shots.length; i += 2){
+    circle(Number(shots[i]), Number(shots[i+1]), 10);
   }
 }
-
 
 function keyPressed(){
   if (!keyJustPressed){
