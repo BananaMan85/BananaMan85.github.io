@@ -90,26 +90,27 @@ function drawColoredTarget() {
 
 function pickAccuracy(){  
   fill(aimColor);
-  if (growAccuracy !== "stop"){
-    circle(x, y, accuracy);
-    if (growAccuracy === "grow"){
-      accuracy += accuracySpeed;
-      if (accuracy >= size){
-        growAccuracy = "shrink";
-      }
-    }
-    else if (growAccuracy === "shrink"){
-      accuracy -= accuracySpeed;
-      if (accuracy <= 0){
-        growAccuracy = "grow";
-      }
-    }
-
-    if (keyJustPressed){
-      growAccuracy = "stop";
-      drawAimScene = true;
+  
+  circle(x, y, accuracy);
+  if (growAccuracy === "grow"){
+    accuracy += accuracySpeed;
+    if (accuracy >= size){
+      growAccuracy = "shrink";
     }
   }
+  else if (growAccuracy === "shrink"){
+    accuracy -= accuracySpeed;
+    if (accuracy <= 0){
+      growAccuracy = "grow";
+    }
+  }
+
+  if (keyJustPressed){
+    // growAccuracy = "stop";
+    pickAccuracyScene = false;
+    drawAimScene = true;
+  }
+
 }
 
 function drawAim(){
@@ -150,9 +151,6 @@ function shoot(){
 
   append(shots, shotX);
   append(shots, shotY);
-
-  console.log(shots);
-
 }
 
 function drawShots(){
