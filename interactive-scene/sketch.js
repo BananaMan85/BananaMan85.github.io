@@ -1,13 +1,13 @@
 // Interactive Scene
 // William Sherwood
-// March 3, 2025
+// March 4, 2025
 //
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
 //https://stackoverflow.com/questions/32642399/simplest-way-to-plot-points-randomly-inside-a-circle
 
-
+//initilize variables
 let theColors = [
   "white",
   "white",
@@ -33,7 +33,7 @@ let speedX;
 let speedY;
 let inertia = 1/50;
 let noiseOffsetX = 0;
-let noiseOffsetY = 1000; // Seperate noiseX from noiseY
+let noiseOffsetY = 1000; //Seperate noiseX from noiseY
 let noiseIncrement = 0.03;
 let driftX = 0;
 let driftY = 0;
@@ -43,6 +43,7 @@ let score = 0;
 
 let aimColor;
 
+//state variables for drawing scenes
 let drawColoredTargetScene = true;
 let pickAccuracyScene = true;
 let drawAimScene = false;
@@ -53,9 +54,11 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   changeSize();
   
+  //create transparent color
   aimColor = color(255,255,255);
   aimColor.setAlpha(128);
   
+  //randomize starting position for aim
   aimX = random(x-size/2, x+size/2);
   aimY = random(y-size/2, y+size/2);
 }
@@ -69,6 +72,7 @@ function draw() {
 
 
 function runScenes(){
+  //run selected scenes
   if (drawColoredTargetScene){
     drawColoredTarget();
   }
@@ -84,6 +88,7 @@ function runScenes(){
 }
 
 function drawColoredTarget() {
+  //draw target
   for (let i = 0; i < theColors.length; i++){
     fill(theColors[i]);
     circle(x, y, size - i*(size/10));
@@ -91,9 +96,12 @@ function drawColoredTarget() {
 }
 
 function pickAccuracy(){  
+  //allow player to pick accuracy
   fill(aimColor);
   
   circle(x, y, accuracy);
+
+  //grow or shrink accuracy circle, stop when a key is pressed
   if (growAccuracy === "grow"){
     accuracy += accuracySpeed;
     if (accuracy >= size){
@@ -108,7 +116,6 @@ function pickAccuracy(){
   }
 
   if (keyJustPressed){
-    // growAccuracy = "stop";
     pickAccuracyScene = false;
     drawAimScene = true;
     allowShoot = true;
@@ -117,12 +124,15 @@ function pickAccuracy(){
 }
 
 function drawAim(){
+  //draw where the player is aiming
   fill(aimColor);
   circle(aimX, aimY, accuracy);
   
+  //cause aim to drag behind cursor
   speedX = (mouseX - aimX) * inertia;
   speedY = (mouseY - aimY) * inertia;
   
+  //cause aim to 'wander' around the mouse when close to the mouse
   if (dist(mouseX, mouseY, aimX, aimY) < accuracy){
   
     driftX = map(noise(noiseOffsetX), 0, 1, -wander, wander);
@@ -132,40 +142,43 @@ function drawAim(){
     noiseOffsetY += noiseIncrement;
   }
   
+  //move aim according to speed and drift
   aimX += speedX + driftX;
   aimY += speedY + driftY;
-  
-  // console.log('X: ' + driftX);
-  // console.log('Y: ' + driftY);
-  // console.log(dist(mouseX, mouseY, aimX, aimY) < accuracy)
 }
 
 function shoot(){
+  //choose random point in aim circle to shoot
   let angle = random(0, 2*PI);
   let pointRadius = random(0, (accuracy/2)**2);
 
   let shotX = pointRadius**(1/2) * cos(angle) + aimX;
   let shotY = pointRadius**(1/2) * sin(angle) + aimY;
 
+  //add shot loaction to array of shots
   append(shots, shotX);
   append(shots, shotY);
 
+  //add new shot to score total
   checkScore();
 }
 
 function drawShots(){
+  //draw all current shots on the target
   fill("white");
   for (let i = 0; i < shots.length; i += 2){
     circle(Number(shots[i]), Number(shots[i+1]), 10);
   }
 
+  //display score
   fill('red');
-  textAlign(TOP, LEFT);
+  textAlign(CENTER, CENTER);
   textSize((size*(2/3))/10);
-  text("Score: " + score, 0, 100);
+  text("Score: " + score, x, y + height*(2/5));
 }
 
 function checkScore(){
+  //add score from most recent shot
   let distance = dist(x, y, shots.slice(-2)[0], shots.slice(-1)[0]);
   for (let i = 0; i < theColors.length; i++){
     if (distance < (size - i*(size/10))/2){
@@ -175,6 +188,7 @@ function checkScore(){
 }
 
 function keyPressed(){
+  //when a key is pressed
   if (!keyJustPressed){
     keyJustPressed = true;
   }
@@ -184,11 +198,14 @@ function keyPressed(){
 }
 
 function windowResized() {
+  //when the size of the window is changed
   resizeCanvas(windowWidth, windowHeight);
   changeSize();
 }
 
 function changeSize(){
+  //adjust locations to account for new window size
+  let oldSize = size;
   x = width / 2;
   y = height / 2;
   if (width <= height){
@@ -196,5 +213,11 @@ function changeSize(){
   }
   else{
     size = height*(2/3);
+  }
+  if (oldSize){
+    accuracy = map(accuracy, 0, oldSize, 0, size);
+    for (let i = 0; i < shots.length; i++){
+      shots[i] = map(shots[i], 0, oldSize, 0, size);
+    }
   }
 }
