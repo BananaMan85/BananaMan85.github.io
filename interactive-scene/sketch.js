@@ -25,7 +25,7 @@ let y;
 let size;
 let accuracy = 50;
 let growAccuracy = "grow";
-let accuracySpeed = 3;
+let accuracySpeed = 10;
 let keyJustPressed = false;
 let aimX;
 let aimY;
@@ -37,8 +37,9 @@ let noiseOffsetY = 1000; // Seperate noiseX from noiseY
 let noiseIncrement = 0.03;
 let driftX = 0;
 let driftY = 0;
-let wander = 0;
+let wander = 1;
 let shots = [];
+let score = 0;
 
 let aimColor;
 
@@ -46,6 +47,7 @@ let drawColoredTargetScene = true;
 let pickAccuracyScene = true;
 let drawAimScene = false;
 let drawShotsScene = true;
+let allowShoot = false;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -100,7 +102,7 @@ function pickAccuracy(){
   }
   else if (growAccuracy === "shrink"){
     accuracy -= accuracySpeed;
-    if (accuracy <= 0){
+    if (accuracy <= size - 9*(size/10)){
       growAccuracy = "grow";
     }
   }
@@ -109,6 +111,7 @@ function pickAccuracy(){
     // growAccuracy = "stop";
     pickAccuracyScene = false;
     drawAimScene = true;
+    allowShoot = true;
   }
 
 }
@@ -138,25 +141,36 @@ function drawAim(){
 }
 
 function shoot(){
-  fill("black");
-
   let angle = random(0, 2*PI);
   let pointRadius = random(0, (accuracy/2)**2);
 
   let shotX = pointRadius**(1/2) * cos(angle) + aimX;
   let shotY = pointRadius**(1/2) * sin(angle) + aimY;
 
-  console.log("X: " + shotX);
-  console.log("Y: " + shotY);
-
   append(shots, shotX);
   append(shots, shotY);
+
+  checkScore();
 }
 
 function drawShots(){
-  fill("black");
+  fill("white");
   for (let i = 0; i < shots.length; i += 2){
     circle(Number(shots[i]), Number(shots[i+1]), 10);
+  }
+
+  fill('red');
+  textAlign(TOP, LEFT);
+  textSize((size*(2/3))/10);
+  text("Score: " + score, 0, 100);
+}
+
+function checkScore(){
+  let distance = dist(x, y, shots.slice(-2)[0], shots.slice(-1)[0]);
+  for (let i = 0; i < theColors.length; i++){
+    if (distance < (size - i*(size/10))/2){
+      score += 1;
+    }
   }
 }
 
@@ -164,7 +178,9 @@ function keyPressed(){
   if (!keyJustPressed){
     keyJustPressed = true;
   }
-  shoot();
+  if (allowShoot){
+    shoot();
+  }
 }
 
 function windowResized() {
