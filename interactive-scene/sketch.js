@@ -3,11 +3,12 @@
 // March 4, 2025
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// This project can adjust to the user resizing the window through the changeSize() function.
+// This project uses the mouse wheel as an input when selecting the difficulty for the game
 
 //https://stackoverflow.com/questions/32642399/simplest-way-to-plot-points-randomly-inside-a-circle
 
-//initilize variables
+//initialize global variables
 let theColors = [
   "white",
   "white",
@@ -29,21 +30,20 @@ let accuracySpeed = 10;
 let keyJustPressed = false;
 let aimX;
 let aimY;
-let speedX;
-let speedY;
 let inertia = 1/50;
 let noiseOffsetX = 0;
 let noiseOffsetY = 1000; //Seperate noiseX from noiseY
 let noiseIncrement = 0.03;
-let driftX = 0;
-let driftY = 0;
 let wander = 1;
 let shots = [];
-let score = 0;
+let score;
 let shootDelay = 1000; //1 second delay between shots
 let shootTimeCounter = 0;
 let difficultyChoices = ["Easy", "Medium", "Hard"];
 let difficulty = 0;
+let shotsRemaining;
+let startButtonPoints = [];
+let helpButtonPoints = []
 
 let aimColor;
 
@@ -75,7 +75,6 @@ function draw() {
   
   keyJustPressed = false;
 }
-
 
 function runScenes(){
   //run selected scenes
@@ -124,18 +123,23 @@ function pickAccuracy(){
     }
   }
 
+  //select accuracy and begin shooting
   if (keyJustPressed){
     pickAccuracyScene = false;
     drawAimScene = true;
     allowShoot = true;
   }
-
 }
 
 function drawAim(){
   //draw where the player is aiming
   fill(aimColor);
   circle(aimX, aimY, accuracy);
+
+  let driftX = 0;
+  let driftY = 0;
+  let speedX;
+  let speedY;
   
   //cause aim to drag behind cursor
   speedX = (mouseX - aimX) * inertia;
@@ -157,16 +161,18 @@ function drawAim(){
 }
 
 function shoot(){
+  //shoot at the target based on accuracy circle
+  shotsRemaining -= 1;
+
   //choose random point in aim circle to shoot
   let angle = random(0, 2*PI);
   let pointRadius = random(0, (accuracy/2)**2);
-
   let shotX = pointRadius**(1/2) * cos(angle) + aimX;
   let shotY = pointRadius**(1/2) * sin(angle) + aimY;
 
   //add shot loaction to array of shots
-  append(shots, shotX);
-  append(shots, shotY);
+  shots.push(shotX);
+  shots.push(shotY);
 
   //add new shot to score total
   checkScore();
@@ -176,7 +182,7 @@ function drawShots(){
   //draw all current shots on the target
   fill("white");
   for (let i = 0; i < shots.length; i += 2){
-    circle(Number(shots[i]), Number(shots[i+1]), 10);
+    circle(Number(shots[i]), Number(shots[i+1]), size/100);
   }
 
   //display score
@@ -184,6 +190,8 @@ function drawShots(){
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
   text("Score: " + score, x, y + height*(2/5));
+
+  text("Shots: " + shotsRemaining, x, y + height*(2/5) + size*(2/3)/10);
 }
 
 function checkScore(){
@@ -201,38 +209,75 @@ function keyPressed(){
   if (!keyJustPressed){
     keyJustPressed = true;
   }
+  if (key === 'r'){
+    drawColoredTargetScene = false;
+    pickAccuracyScene = false;
+    drawAimScene = false;
+    drawShotsScene = false;
+    drawStartScreenScene = true;
+    allowShoot = false;
+    displayHowToPlay = false;
+  }
 }
 
 function mousePressed(){
   //when the mouse is clicked
 
   //shooting
-  if (allowShoot && millis() - shootTimeCounter > shootDelay){
+  if (allowShoot && millis() - shootTimeCounter > shootDelay && shotsRemaining > 0){
     shoot();
     shootTimeCounter = millis();
   }
 
   //clicking a button
   if (drawStartScreenScene){
-    if (mouseX > x - x/8 && mouseX < x/4 + x - x/8){
-      if (mouseY > height*(2/5) + height/20 && mouseY < y/10 + height*(2/5) + height/20){
-        drawStartScreenScene = false;
-        drawColoredTargetScene = true;
-        pickAccuracyScene = true;
-        drawShotsScene = true;
+    if (mouseX > startButtonPoints[0] && mouseX < startButtonPoints[0] + startButtonPoints[2] &&
+      mouseY > startButtonPoints[1] && mouseY < startButtonPoints[1] + startButtonPoints[3]){
+        start();
       }
-      if (mouseY > height*(2/5) + height/8 && mouseY < y/10 + height*(2/5) + height/8){
+    if (mouseX > helpButtonPoints[0] && mouseX < helpButtonPoints[0] + helpButtonPoints[2] &&
+      mouseY > helpButtonPoints[1] && mouseY < helpButtonPoints[1] + helpButtonPoints[3]){
         displayHowToPlay = true;
       }
-    }
   }
+  
+}
 
+function start(){
+  //begin running scenes for the game
+  drawStartScreenScene = false;
+  drawColoredTargetScene = true;
+  pickAccuracyScene = true;
+  drawShotsScene = true;
+  shotsRemaining = 10;
+  score = 0;
+  shots = [];
+
+  //update the variables associated with difficulty
+  if (difficultyChoices[difficulty] === "Easy"){
+    wander = 0.5;
+    accuracySpeed = 15;
+    noiseIncrement = 0.2;
+  }
+  else if (difficultyChoices[difficulty] === "Medium"){
+    wander = 2.5;
+    accuracySpeed = 30;
+    noiseIncrement = 0.2;
+  }
+  else if (difficultyChoices[difficulty] === "Hard"){
+    wander = 5;
+    accuracySpeed = 75;
+    noiseIncrement = 0.2;
+  }
 }
 
 function drawStartScreen(){
+  //display the start screen
   difficultySelector();
   startButton();
   howToPlayButton();
+
+
   if (displayHowToPlay){
     fill('red');
     textAlign(CENTER, CENTER);
@@ -240,53 +285,76 @@ function drawStartScreen(){
     text("Use scroll wheel to select difficulty", x, height*(2/5) + height/5 + y/20);
     text("Press any key to stop accuracy circle", x, height*(2/5) + height/5 + y/20 + size*(2/3)/10);
     text("Left click to shoot", x, height*(2/5) + height/5 + y/20 + (size*(2/3)/10)*2);
+    text("Press 'r' to reset", x, height*(2/5) + height/5 + y/20 + (size*(2/3)/10)*3);
   }  
 }
 
 function difficultySelector(){
   //display the current difficulty selected
+  let difficultyText = difficultyChoices[difficulty];
+  let buffer = x/50
+  let textY = height*(2/5)
+  
+  //create the parameters for the points of the triangles
+  let trianglePoints = [];
+  trianglePoints.push(x + textWidth(difficultyText)/2 + buffer);
+  trianglePoints.push(textY + textSize(difficultyText)/2);
+  trianglePoints.push(x + textWidth(difficultyText)/2 + buffer);
+  trianglePoints.push(textY - textSize(difficultyText)/2);
+  trianglePoints.push(x + textWidth(difficultyText)/2 + buffer*3);
+  trianglePoints.push(textY);
+
   fill('red');
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
-  text(difficultyChoices[difficulty], x, height*(2/5));
+  text(difficultyText, x, textY);
 
-  if (difficultyChoices[difficulty] === "Easy"){
-    wander = 0.5;
-    accuracySpeed = 5;
-    noiseIncrement = 0.2;
-  }
-  else if (difficultyChoices[difficulty] === "Medium"){
-    wander = 1;
-    accuracySpeed = 15;
-    noiseIncrement = 0.3;
-  }
-  else if (difficultyChoices[difficulty] === "Hard"){
-    wander = 5;
-    accuracySpeed = 30;
-    noiseIncrement = 0.6;
-  }
+  triangle(trianglePoints[0], trianglePoints[1], trianglePoints[2], trianglePoints[3], trianglePoints[4], trianglePoints[5]);
+  triangle((trianglePoints[0] - x)*-1 + x, trianglePoints[1], (trianglePoints[2] - x)*-1 + x, trianglePoints[3], (trianglePoints[4] - x)*-1 + x, trianglePoints[5]);
 }
 
 function startButton(){
   //display the start button
-  fill("red");
-  rect(x - x/8, height*(2/5) + height/20, x/4, y/10);
+  let buttonText = "Start"
+  let buttonBuffer = x/50;
 
-  fill('white');
+  //create the parameters for the points of the start button
+  startButtonPoints = [];
+  startButtonPoints.push(x - textWidth(buttonText)/2 - buttonBuffer);
+  startButtonPoints.push(height*(2/5) + height/20);
+  startButtonPoints.push(textWidth(buttonText) + buttonBuffer*2);
+  startButtonPoints.push(y/10);
+
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
+
+  fill("red");
+  rect(startButtonPoints[0], startButtonPoints[1], startButtonPoints[2], startButtonPoints[3]);
+
+  fill('white');
   text("Start", x, height*(2/5) + height/20 + y/20);
 }
 
 function howToPlayButton(){
   //display the how to play button
-  fill("red");
-  rect(x - x/8, height*(2/5) + height/8, x/4, y/10);
+  let buttonText = "How To Play"
+  let buttonBuffer = x/50;
 
-  fill('white');
+  //create the parameters for the points of the help button
+  helpButtonPoints = [];
+  helpButtonPoints.push(x - textWidth(buttonText)/2 - buttonBuffer);
+  helpButtonPoints.push(height*(2/5) + height/8);
+  helpButtonPoints.push(textWidth(buttonText) + buttonBuffer*2);
+  helpButtonPoints.push(y/10);
+
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
-  text("How to Play", x, height*(2/5) + height/8 + y/20);
+
+  fill("red");
+  rect(helpButtonPoints[0], helpButtonPoints[1], helpButtonPoints[2], helpButtonPoints[3]);
+
+  fill('white');
+  text(buttonText, x, height*(2/5) + height/8 + y/20);
 }
 
 function mouseWheel(event){
@@ -295,13 +363,11 @@ function mouseWheel(event){
   //increase difficulty when scrolling up and decrease when scrolling down
   if (event.delta < 0){
     difficulty += 1;
-    difficulty %= 3;
+    difficulty %= difficultyChoices.length;
   }
   else if(event.delta > 0){
-    difficulty -= 1;
-    if (difficulty < 0){
-      difficulty = 2;
-    }
+    difficulty += -1 + difficultyChoices.length;
+    difficulty %= difficultyChoices.length;
   }
   return false;
 }
@@ -313,20 +379,24 @@ function windowResized() {
 }
 
 function changeSize(){
-  //adjust locations to account for new window size
+  //adjust variables to account for new window size
   let oldSize = size;
+  let oldX = x
+  let oldY = y
   x = width / 2;
   y = height / 2;
-  if (width <= height){
-    size = width*(2/3);
-  }
-  else{
-    size = height*(2/3);
-  }
+
+  size = min(width, height)*(2/3);
+
+  //adjust sizes and locations to account for new window size
   if (oldSize){
     accuracy = map(accuracy, 0, oldSize, 0, size);
-    for (let i = 0; i < shots.length; i++){
-      shots[i] = map(shots[i], 0, oldSize, 0, size);
+    for (let i = 0; i < shots.length; i += 2){
+      let relX = (shots[i] - oldX) / oldSize;
+      let relY = (shots[i + 1] - oldY) / oldSize;
+      
+      shots[i] = x + relX * size;
+      shots[i + 1] = y + relY * size;
     }
   }
 }
