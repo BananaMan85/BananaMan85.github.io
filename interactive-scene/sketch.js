@@ -40,15 +40,21 @@ let driftY = 0;
 let wander = 1;
 let shots = [];
 let score = 0;
+let shootDelay = 1000; //1 second delay between shots
+let shootTimeCounter = 0;
+let difficultyChoices = ["Easy", "Medium", "Hard"];
+let difficulty = 0;
 
 let aimColor;
 
 //state variables for drawing scenes
-let drawColoredTargetScene = true;
-let pickAccuracyScene = true;
+let drawColoredTargetScene = false;
+let pickAccuracyScene = false;
 let drawAimScene = false;
-let drawShotsScene = true;
+let drawShotsScene = false;
+let drawStartScreenScene = true;
 let allowShoot = false;
+let displayHowToPlay = false;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -84,6 +90,9 @@ function runScenes(){
   }
   if (drawShotsScene){
     drawShots();
+  }
+  if (drawStartScreenScene){
+    drawStartScreen();
   }
 }
 
@@ -173,7 +182,7 @@ function drawShots(){
   //display score
   fill('red');
   textAlign(CENTER, CENTER);
-  textSize((size*(2/3))/10);
+  textSize(size*(2/3)/10);
   text("Score: " + score, x, y + height*(2/5));
 }
 
@@ -192,9 +201,109 @@ function keyPressed(){
   if (!keyJustPressed){
     keyJustPressed = true;
   }
-  if (allowShoot){
+}
+
+function mousePressed(){
+  //when the mouse is clicked
+
+  //shooting
+  if (allowShoot && millis() - shootTimeCounter > shootDelay){
     shoot();
+    shootTimeCounter = millis();
   }
+
+  //clicking a button
+  if (drawStartScreenScene){
+    if (mouseX > x - x/8 && mouseX < x/4 + x - x/8){
+      if (mouseY > height*(2/5) + height/20 && mouseY < y/10 + height*(2/5) + height/20){
+        drawStartScreenScene = false;
+        drawColoredTargetScene = true;
+        pickAccuracyScene = true;
+        drawShotsScene = true;
+      }
+      if (mouseY > height*(2/5) + height/8 && mouseY < y/10 + height*(2/5) + height/8){
+        displayHowToPlay = true;
+      }
+    }
+  }
+
+}
+
+function drawStartScreen(){
+  difficultySelector();
+  startButton();
+  howToPlayButton();
+  if (displayHowToPlay){
+    fill('red');
+    textAlign(CENTER, CENTER);
+    textSize(size*(2/3)/10);
+    text("Use scroll wheel to select difficulty", x, height*(2/5) + height/5 + y/20);
+    text("Press any key to stop accuracy circle", x, height*(2/5) + height/5 + y/20 + size*(2/3)/10);
+    text("Left click to shoot", x, height*(2/5) + height/5 + y/20 + (size*(2/3)/10)*2);
+  }  
+}
+
+function difficultySelector(){
+  //display the current difficulty selected
+  fill('red');
+  textAlign(CENTER, CENTER);
+  textSize(size*(2/3)/10);
+  text(difficultyChoices[difficulty], x, height*(2/5));
+
+  if (difficultyChoices[difficulty] === "Easy"){
+    wander = 0.5;
+    accuracySpeed = 5;
+    noiseIncrement = 0.2;
+  }
+  else if (difficultyChoices[difficulty] === "Medium"){
+    wander = 1;
+    accuracySpeed = 15;
+    noiseIncrement = 0.3;
+  }
+  else if (difficultyChoices[difficulty] === "Hard"){
+    wander = 5;
+    accuracySpeed = 30;
+    noiseIncrement = 0.6;
+  }
+}
+
+function startButton(){
+  //display the start button
+  fill("red");
+  rect(x - x/8, height*(2/5) + height/20, x/4, y/10);
+
+  fill('white');
+  textAlign(CENTER, CENTER);
+  textSize(size*(2/3)/10);
+  text("Start", x, height*(2/5) + height/20 + y/20);
+}
+
+function howToPlayButton(){
+  //display the how to play button
+  fill("red");
+  rect(x - x/8, height*(2/5) + height/8, x/4, y/10);
+
+  fill('white');
+  textAlign(CENTER, CENTER);
+  textSize(size*(2/3)/10);
+  text("How to Play", x, height*(2/5) + height/8 + y/20);
+}
+
+function mouseWheel(event){
+  //change difficulty based on mouse scroll wheel
+
+  //increase difficulty when scrolling up and decrease when scrolling down
+  if (event.delta < 0){
+    difficulty += 1;
+    difficulty %= 3;
+  }
+  else if(event.delta > 0){
+    difficulty -= 1;
+    if (difficulty < 0){
+      difficulty = 2;
+    }
+  }
+  return false;
 }
 
 function windowResized() {
