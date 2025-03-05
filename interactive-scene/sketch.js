@@ -117,6 +117,7 @@ function pickAccuracy(){
   else if (growAccuracy === "shrink"){
     accuracy -= accuracySpeed;
     if (accuracy <= size - 9*(size/10)){
+      accuracy = size - 9*(size/10);
       growAccuracy = "grow";
     }
   }
