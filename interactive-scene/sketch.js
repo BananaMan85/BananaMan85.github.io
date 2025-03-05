@@ -6,8 +6,6 @@
 // This project can adjust to the user resizing the window through the changeSize() function.
 // This project uses the mouse wheel as an input when selecting the difficulty for the game
 
-//https://stackoverflow.com/questions/32642399/simplest-way-to-plot-points-randomly-inside-a-circle
-
 //initialize global variables
 let theColors = [
   "white",
@@ -57,6 +55,7 @@ let allowShoot = false;
 let displayHowToPlay = false;
 
 function setup() {
+  //setup canvas
   createCanvas(windowWidth, windowHeight);
   changeSize();
   
@@ -106,10 +105,9 @@ function drawColoredTarget() {
 function pickAccuracy(){  
   //allow player to pick accuracy
   fill(aimColor);
-  
   circle(x, y, accuracy);
 
-  //grow or shrink accuracy circle, stop when a key is pressed
+  //grow or shrink accuracy circle up to size of target
   if (growAccuracy === "grow"){
     accuracy += accuracySpeed;
     if (accuracy >= size){
@@ -191,12 +189,17 @@ function drawShots(){
   textSize(size*(2/3)/10);
   text("Score: " + score, x, y + height*(2/5));
 
+  //display remaining shots
   text("Shots: " + shotsRemaining, x, y + height*(2/5) + size*(2/3)/10);
 }
 
 function checkScore(){
   //add score from most recent shot
+
+  //find distance of shot from the centre
   let distance = dist(x, y, shots.slice(-2)[0], shots.slice(-1)[0]);
+
+  //add 1 to score for every ring that the shot is inside of
   for (let i = 0; i < theColors.length; i++){
     if (distance < (size - i*(size/10))/2){
       score += 1;
@@ -209,6 +212,8 @@ function keyPressed(){
   if (!keyJustPressed){
     keyJustPressed = true;
   }
+
+  //reset the game when 'r' is pressed
   if (key === 'r'){
     drawColoredTargetScene = false;
     pickAccuracyScene = false;
@@ -223,28 +228,32 @@ function keyPressed(){
 function mousePressed(){
   //when the mouse is clicked
 
-  //shooting
+  //shoot when allowed and a 1 second delay has passed and the player has shots remaining
   if (allowShoot && millis() - shootTimeCounter > shootDelay && shotsRemaining > 0){
     shoot();
     shootTimeCounter = millis();
   }
 
-  //clicking a button
+  //clicking a button on the start screen
   if (drawStartScreenScene){
-    if (mouseX > startButtonPoints[0] && mouseX < startButtonPoints[0] + startButtonPoints[2] &&
-      mouseY > startButtonPoints[1] && mouseY < startButtonPoints[1] + startButtonPoints[3]){
+    if (isMouseInRect(startButtonPoints[0], startButtonPoints[1], startButtonPoints[2], startButtonPoints[3])){
         start();
       }
-    if (mouseX > helpButtonPoints[0] && mouseX < helpButtonPoints[0] + helpButtonPoints[2] &&
-      mouseY > helpButtonPoints[1] && mouseY < helpButtonPoints[1] + helpButtonPoints[3]){
+    if (isMouseInRect(helpButtonPoints[0], helpButtonPoints[1], helpButtonPoints[2], helpButtonPoints[3])){
         displayHowToPlay = true;
       }
   }
-  
+}
+
+function isMouseInRect(x, y, w, h){
+  //check if the mouse is in a rectangle with the top left corner at coordinates (x,y), width w, and height h
+  return mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
 }
 
 function start(){
-  //begin running scenes for the game
+  //begin running the game
+
+  //reset game states and start proper scenes
   drawStartScreenScene = false;
   drawColoredTargetScene = true;
   pickAccuracyScene = true;
@@ -277,7 +286,7 @@ function drawStartScreen(){
   startButton();
   howToPlayButton();
 
-
+  //display the instructions for the game
   if (displayHowToPlay){
     fill('red');
     textAlign(CENTER, CENTER);
@@ -304,6 +313,7 @@ function difficultySelector(){
   trianglePoints.push(x + textWidth(difficultyText)/2 + buffer*3);
   trianglePoints.push(textY);
 
+  //draw the selected difficulty on the screen
   fill('red');
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
@@ -325,6 +335,7 @@ function startButton(){
   startButtonPoints.push(textWidth(buttonText) + buttonBuffer*2);
   startButtonPoints.push(y/10);
 
+  //draw the start button on the screen
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
 
@@ -347,6 +358,7 @@ function howToPlayButton(){
   helpButtonPoints.push(textWidth(buttonText) + buttonBuffer*2);
   helpButtonPoints.push(y/10);
 
+  //draw the how to play button on the screen
   textAlign(CENTER, CENTER);
   textSize(size*(2/3)/10);
 
