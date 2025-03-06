@@ -9,22 +9,36 @@ function setup() {
 function draw() {
   background(220);
   for (let ball of ballArray){
-    //move ball
-    ball.x += ball.dx;
-    ball.y += ball.dy;
-
-    //wrap around the screen
-    ball.x += width + ball.radius;
-    ball.x %= width;
-    ball.x -= ball.radius;
-    ball.y += height + ball.radius;
-    ball.y %= height;
-    ball.y -= ball.radius;
-
-    //display ball
-    fill("red");
-    circle(ball.x, ball.y, ball.radius*2);
+    moveBalls(ball);
+    displayBalls(ball);
   }
+}
+
+function moveBalls(ball){
+  //move ball
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  //wrap around the screen
+  if (ball.x - ball.radius > width){
+    ball.x -= width + ball.radius*2;
+  }
+  else if (ball.x + ball.radius < 0){
+    ball.x += width + ball.radius*2;
+  }
+  else if (ball.y + ball.radius < 0){
+    ball.y += height + ball.radius*2;
+  }
+  else if (ball.y - ball.radius > height){
+    ball.y -= height + ball.radius*2;
+  }
+}
+
+function displayBalls(ball){
+  //display ball
+  noStroke();
+  fill("red");
+  circle(ball.x, ball.y, ball.radius*2);
 }
 
 function spawnBall(){
