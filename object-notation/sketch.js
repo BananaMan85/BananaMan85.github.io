@@ -12,6 +12,15 @@ let scaleFactor ={
   y: 1,
 };
 
+let shared;
+
+function preload() {
+  partyConnect(
+    "wss://demoserver.p5party.org", 
+  );
+  shared = partyLoadShared("shared", { x: 100, y: 100 });
+}
+
 function setup() {
   createCanvas(800, 800);
 }
