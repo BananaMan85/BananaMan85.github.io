@@ -5,6 +5,7 @@
 - [Generative Art](generative-art)
 - [Perlin Noise](perlin-noise)
 - [p5 Party Test](p5-party)
+- [Terrain Generation](terrain)
 
 # CS30 Projects
 - [Interactive Scene](interactive-scene)
