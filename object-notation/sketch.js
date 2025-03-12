@@ -13,12 +13,16 @@ let scaleFactor ={
 };
 
 let shared;
+let players;
+let myHand = [];
+let gameState = {};
 
 function preload() {
   partyConnect(
     "wss://demoserver.p5party.org", 
+    "blackjack"
   );
-  shared = partyLoadShared("shared", { x: 100, y: 100 });
+  shared = partyLoadShared("shared", {});
 }
 
 function setup() {
@@ -27,6 +31,46 @@ function setup() {
 
 function draw() {
   background(220);
+
+  if(partyIsHost()){
+    gameLogic();
+  }
+}
+
+function gameLogic(){
+
+}
+
+function setupGame(){
+  let deck = shuffleDeck(createDeck());
+  shared.gameState = {
+    deck,
+    dealerHand: [],
+    currentTurn: 0,
+    gameStarted: true,
+  };
+}
+
+function createDeck(){
+  //create an array of objects for each card in a standard deck
+  let suits = ["spades", "hearts", "diamonds", "clubs"];
+  let values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+  let deck = [];
+  for (let suit of suits){
+    for (let value of values){
+      deck.push({value, suit});
+    }
+  }
+  return deck;
+}
+
+function shuffleDeck(deck){
+//randomize the order of the objects in the deck array
+  for (let i = deck.length - 1; i > 0; i--){
+    let j = floor(random(i+1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
 }
 
 function windowResized() {
