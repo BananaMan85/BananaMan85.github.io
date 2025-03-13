@@ -79,8 +79,20 @@ function drawPlayerHands() {
       fill(255);
       textAlign(CENTER, CENTER);
       text("Player " + (i + 1), x, y - 30);
-      drawCards(player.hand, x - (player.hand.length * 30), y);
+      drawStackedCards(player.hand, x, y);
     }
+  }
+}
+
+function drawStackedCards(hand, x, y){
+  for (let i = 0; i < hand.length; i++){
+    let offset = i*20;
+    fill(255);
+    rect(x + offset, y, 60, 90, 10);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(20 * min(scaleFactor.x, scaleFactor.y));
+    text(hand[1].value + "\n" + hand[i].suit, x + offset + 30, y + 45);
   }
 }
 
@@ -174,7 +186,7 @@ function isUserPlaying(player){
 function currentPlayer(){
   //returns the current players who's seat is next to act
   for (let player of guests){
-    if (player.seat === str(gameState.currentTurn)){
+    if (player.seat === gameState.currentTurn){
       return player;
     }
   }
@@ -300,7 +312,7 @@ function hit(){
   //the player draws another card
   if (!isMyTurn() || my.results[my.currentHand] === 'bust') return;
   my.hand.push(drawCard());
-  checkBust(my.hand)
+  checkBust(my.hand);
 }
 
 function stand(){
@@ -432,6 +444,7 @@ function determineWinners(){
         }
       }
     }
+    player.currentHand = 0;
   }
 }
 
