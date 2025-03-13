@@ -50,9 +50,6 @@ function draw() {
     //gameLogic();
 
   }
-  if (mouseIsPressed){
-    clickReleased = false;
-  }
   drawGameUI();
 }
 
