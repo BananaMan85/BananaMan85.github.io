@@ -16,8 +16,8 @@ let guests;
 let my;
 let myHand = [];
 let gameState;
-let tableSize = 4; //maximum amount of players at the table
-let shoeSize = 6; //amount of decks used in the shoe
+const TABLE_SIZE = 4; //maximum amount of players at the table
+const SHOE_SIZE = 6; //amount of decks used in the shoe
 
 function preload() {
   //setup p5.party
@@ -57,7 +57,7 @@ function gameLogic(){
 
 function findSeat(){
   //find an empty seat at the table. filling from lowest to highest
-  for (let i = 0; i < tableSize; i++){
+  for (let i = 0; i < TABLE_SIZE; i++){
     if (!isSeatTaken(i)){
       my.seat = str(i);
       return;
@@ -65,10 +65,10 @@ function findSeat(){
   }
 }
 
-function isSeatTaken(i){
+function isSeatTaken(seat){
   //check if a given seat at the table is taken
   for (let player of guests){
-    if (player.seat === str(i)){
+    if (player.seat === str(seat)){
       return true;
     }
   }
@@ -117,7 +117,7 @@ function createDeck(){
   let deck = [];
 
   //create a deck consisting of as many 52-card decks as specified by the shoe size
-  for (let i = 0; i < shoeSize; i++){
+  for (let i = 0; i < SHOE_SIZE; i++){
     for (let suit of suits){
       for (let value of values){
         deck.push({value, suit});
@@ -143,12 +143,14 @@ function drawCard(){
 
 function dealCards(){
   //deal the initial two cards to every player and the dealer
+  if (gameState.hasOwnProperty('dealt')) return;
   for (let player of guests){
     if (isUserAtTable(player)){
       player.hand = [drawCard(), drawCard()];
     }
   }
   gameState.dealerHand = [drawCard(), drawCard()];
+  gameState.dealt = true;
   checkBlackjack();
 }
 
@@ -164,7 +166,7 @@ function checkBlackjack(){
 
   //check for dealer blackjacks
   if (calculateHandValue(gameState.dealerHand) === 21){
-    gameState.currentTurn = tableSize;
+    gameState.currentTurn = TABLE_SIZE;
     checkDealerTurn();
   }
 }
@@ -172,14 +174,14 @@ function checkBlackjack(){
 function checkDealerTurn(){
   //check if all players have completed their actions and it is now the dealers turn
   skipEmptySeats();
-  if (gameState.currentTurn >= tableSize){
+  if (gameState.currentTurn >= TABLE_SIZE){
     dealerPlay();
   }
 }
 
 function skipEmptySeats(){
   //pass over any empty seats until the next occupied seat is reached
-  for (let i = 0; i < tableSize; i++){
+  for (let i = 0; i < TABLE_SIZE; i++){
     if (!isUserPlaying(currentPlayer())){
       gameState.currentTurn++;
     }
@@ -206,6 +208,7 @@ function stand(){
 function bust(){
   //the player has gone over 21
   my.result = 'bust';
+  gameState.currentTurn++;
   checkDealerTurn();
 
 }
@@ -214,7 +217,6 @@ function checkBust(hand){
   //check if the given hand has busted by going over 21
   if (calculateHandValue(hand) > 21) {
     bust();
-    gameState.currentTurn++;
   }
 }
 
@@ -271,7 +273,7 @@ function determineWinners(){
         }
       }
       //if both the player and dealer got blackjack then the hand is a push
-      if (player.result === 'blackjack' && dealerHand === 21 && gameState.dealCards.length === 2){
+      if (player.result === 'blackjack' && dealerScore === 21 && gameState.dealCards.length === 2){
         player.result = 'push';
       }
     }
@@ -280,7 +282,7 @@ function determineWinners(){
 
 function isMyTurn(){
   //check if it is this users turn to act
-  return Object.keys(guests)[gameState.currentTurn] === my.seat;
+  return str(gameState.currentTurn) === my.seat;
 }
 
 function windowResized() {
