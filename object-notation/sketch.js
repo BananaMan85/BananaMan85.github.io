@@ -49,6 +49,28 @@ function draw() {
     //gameLogic();
 
   }
+  drawButton(width/2, height/2, 50*scaleFactor.x, 50*scaleFactor.y, 'hit', hit)
+}
+
+function drawButton(x, y, w, h, label, action) {
+  let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
+
+  //button style
+  fill(isHovered ? "red" : "green"); // Change color when hovered
+  stroke(0);
+  strokeWeight(2);
+  rect(x, y, w, h, 10);
+
+  //text style
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(16*min(scaleFactor.x, scaleFactor.y));
+  text(label, x + w / 2, y + h / 2);
+
+  //when the button is clicked
+  if (isHovered && mouseIsPressed) { //CALLED WITHOUT DELAY
+    action();
+  }
 }
 
 function gameLogic(){
@@ -59,7 +81,7 @@ function findSeat(){
   //find an empty seat at the table. filling from lowest to highest
   for (let i = 0; i < TABLE_SIZE; i++){
     if (!isSeatTaken(i)){
-      my.seat = str(i);
+      my.seat = i;
       return;
     }
   }
@@ -68,7 +90,7 @@ function findSeat(){
 function isSeatTaken(seat){
   //check if a given seat at the table is taken
   for (let player of guests){
-    if (player.seat === str(seat)){
+    if (int(player.seat) === seat){
       return true;
     }
   }
@@ -221,7 +243,7 @@ function stand(){
   //the player ends their turn
   if (!isMyTurn()) return;
 
-  if (my.hands.length > my.currentHand){
+  if (my.hands.length-1 > my.currentHand){
     playNextHand();
   }
   else{
@@ -255,9 +277,6 @@ function splitCards(){
   my.hands[my.currentHand] = [card1, drawCard()];
   my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
 
-  // my.hands.push([card1, drawCard()]);
-  // my.hands.push([card2, drawCard()]);
-
   my.hand = my.hands[my.currentHand];
   checkBlackjack();
   while (my.results[my.currentHand] === 'blackjack'){
@@ -274,7 +293,7 @@ function bust(){
   //the player has gone over 21
   my.results[my.currentHand] = 'bust';
 
-  if (my.hands.length > my.currentHand){
+  if (my.hands.length-1 > my.currentHand){
     playNextHand();
   }
   else{
@@ -354,7 +373,7 @@ function determineWinners(){
 
 function isMyTurn(){
   //check if it is this users turn to act
-  return str(gameState.currentTurn) === my.seat;
+  return gameState.currentTurn === my.seat;
 }
 
 function windowResized() {
