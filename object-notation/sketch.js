@@ -49,8 +49,66 @@ function draw() {
     //gameLogic();
 
   }
-  drawButton(width/2, height/2, 50*scaleFactor.x, 50*scaleFactor.y, 'hit', hit)
+  drawGameUI();
 }
+
+function drawGameUI() {
+  background(34, 139, 34); // Green background like a casino table
+  
+  drawDealerHand();
+  drawPlayerHands();
+  drawButtons();
+  drawBettingInfo();
+}
+
+function drawDealerHand() {
+  fill(255);
+  textSize(24 * min(scaleFactor.x, scaleFactor.y));
+  textAlign(CENTER, CENTER);
+  text("Dealer's Hand", width / 2, 50 * scaleFactor.y);
+  drawCards(gameState.dealerHand, width / 2 - (gameState.dealerHand.length * 30), 80);
+}
+
+function drawPlayerHands() {
+  for (let i = 0; i < guests.length; i++) {
+    let player = guests[i];
+    if (isUserAtTable(player) && isUserPlaying(player)) {
+      let x = width / (TABLE_SIZE + 1) * (i + 1);
+      let y = height - 150 * scaleFactor.y;
+      fill(255);
+      textAlign(CENTER, CENTER);
+      text("Player " + (i + 1), x, y - 30);
+      drawCards(player.hand, x - (player.hand.length * 30), y);
+    }
+  }
+}
+
+function drawCards(hand, x, y) {
+  for (let i = 0; i < hand.length; i++) {
+    fill(255);
+    rect(x + i * 40, y, 60, 90, 10);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    textSize(20 * min(scaleFactor.x, scaleFactor.y));
+    text(hand[i].value + "\n" + hand[i].suit, x + i * 40 + 30, y + 45);
+  }
+}
+
+function drawButtons() {
+  let buttonY = height - 80 * scaleFactor.y;
+  drawButton(100, buttonY, 100, 40, "Hit", hit);
+  drawButton(220, buttonY, 100, 40, "Stand", stand);
+  drawButton(340, buttonY, 100, 40, "Double", doubleDown);
+  drawButton(460, buttonY, 100, 40, "Split", splitCards);
+}
+
+function drawBettingInfo() {
+  fill(255);
+  textSize(20 * min(scaleFactor.x, scaleFactor.y));
+  textAlign(LEFT, TOP);
+  text("Bet: " + my.bets[my.currentHand] + "\nResult: " + my.results[my.currentHand], 20, 20);
+}
+
 
 function drawButton(x, y, w, h, label, action) {
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
