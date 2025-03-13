@@ -246,9 +246,9 @@ function checkBlackjack(){
 
   //check for player blackjacks
   for (let player of guests){
-    for (let hand of player.hands){
-      if (calculateHandValue(hand) === 21 && isUserPlaying(player)){
-        player.results[player.currentHand] = 'blackjack';
+    for (let i = 0; i < player.hands.length; i++){
+      if (calculateHandValue(player.hands[i]) === 21 && isUserPlaying(player)){
+        player.results[i] = 'blackjack';
       }
     }
   }
