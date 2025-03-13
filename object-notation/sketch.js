@@ -26,7 +26,7 @@ function preload() {
     "blackjack"
   );
   gameState = partyLoadShared("gameState", {});
-  my = partyLoadMyShared({seat: -1, result: 'none'});
+  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0});
   guests = partyLoadGuestShareds();
 }
 
@@ -147,6 +147,7 @@ function dealCards(){
   for (let player of guests){
     if (isUserAtTable(player)){
       player.hand = [drawCard(), drawCard()];
+      player.hands.push(player.hand);
     }
   }
   gameState.dealerHand = [drawCard(), drawCard()];
@@ -159,8 +160,10 @@ function checkBlackjack(){
 
   //check for player blackjacks
   for (let player of guests){
-    if (calculateHandValue(player.hand) === 21 && isUserPlaying(player)){
-      player.result = 'blackjack';
+    for (let hand of player.hands){
+      if (calculateHandValue(hand) === 21 && isUserPlaying(player)){
+        player.results[player.currentHand] = 'blackjack';
+      }
     }
   }
 
@@ -191,9 +194,25 @@ function skipEmptySeats(){
   }
 }
 
+function playNextHand(){
+  //when a player has split their cards move to their next hand after completing one
+  my.currentHand++;
+  my.hand = my.hands[my.currentHand];
+  checkBlackjack();
+
+  while (my.results[my.currentHand] === 'blackjack'){
+    my.currentHand++;
+    my.hand = my.hands[my.currentHand];
+  }
+  if (my.currentHand >= my.hands.length){
+    gameState.currentTurn++;
+    checkDealerTurn();
+  }
+}
+
 function hit(){
   //the player draws another card
-  if (!isMyTurn() || my.result === 'bust') return;
+  if (!isMyTurn() || my.results[my.currentHand] === 'bust') return;
   my.hand.push(drawCard());
   checkBust(my.hand)
 }
@@ -201,16 +220,67 @@ function hit(){
 function stand(){
   //the player ends their turn
   if (!isMyTurn()) return;
-  gameState.currentTurn++;
-  checkDealerTurn();
+
+  if (my.hands.length > my.currentHand){
+    playNextHand();
+  }
+  else{
+    gameState.currentTurn++;
+    checkDealerTurn();
+  }
+}
+
+function doubleDown(){
+  //the player doubles down by doubling their bet and drawing a single extra card
+  if (!isMyTurn() || my.hand.length !== 2) return;
+  
+  my.bets[my.currentHand] *= 2;
+  my.hand.push(drawCard());
+
+  checkBust(my.hand);
+  if (my.results[my.currentHand] !== 'bust'){
+    stand();
+  }
+}
+
+function splitCards(){
+  //the player splits their hand into two seperate hands by matching their original bet. only possible when dealt two cards of the same value
+  if (!isMyTurn() || my.hand.length !== 2) return;
+
+  let [card1, card2] = my.hand;
+  if (card1.value !== card2.value) return;
+
+  my.bets.push(my.bets[0]);
+  my.results.push('none');
+  my.hands[my.currentHand] = [card1, drawCard()];
+  my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
+
+  // my.hands.push([card1, drawCard()]);
+  // my.hands.push([card2, drawCard()]);
+
+  my.hand = my.hands[my.currentHand];
+  checkBlackjack();
+  while (my.results[my.currentHand] === 'blackjack'){
+    my.currentHand++;
+    my.hand = my.hands[my.currentHand];
+  }
+  if (my.currentHand >= my.hands.length){
+    gameState.currentTurn++;
+    checkDealerTurn();
+  }
 }
 
 function bust(){
   //the player has gone over 21
-  my.result = 'bust';
-  gameState.currentTurn++;
-  checkDealerTurn();
+  my.results[my.currentHand] = 'bust';
 
+  if (my.hands.length > my.currentHand){
+    playNextHand();
+  }
+  else{
+    gameState.currentTurn++;
+    checkDealerTurn();
+  }
 }
 
 function checkBust(hand){
@@ -259,22 +329,24 @@ function determineWinners(){
   //deterime the outcome of each player's hand
   let dealerScore = calculateHandValue(gameState.dealerHand);
   for (let player of guests){
-    if (isUserPlaying(player)){
-      let playerScore = calculateHandValue(player.hand);
-      if (player.result !== 'bust' && player.result !== 'blackjack'){
-        if (dealerScore > playerScore){
-          player.result = 'lose';
+    for (player.currentHand = 0; player.currentHand < player.hands.length; player.currentHand++){
+      if (isUserPlaying(player)){
+        let playerScore = calculateHandValue(player.hand);
+        if (player.results[player.currentHand] !== 'bust' && player.results[player.currentHand] !== 'blackjack'){
+          if (dealerScore > playerScore){
+            player.results[player.currentHand] = 'lose';
+          }
+          else if (dealerScore === playerScore){
+            player.results[player.currentHand] = 'push';
+          }
+          else{
+            player.results[player.currentHand] = 'win';
+          }
         }
-        else if (dealerScore === playerScore){
-          player.result = 'push';
+        //if both the player and dealer got blackjack then the hand is a push
+        if (player.results[player.currentHand] === 'blackjack' && dealerScore === 21 && gameState.dealerHand.length === 2){
+          player.results[player.currentHand] = 'push';
         }
-        else{
-          player.result = 'win';
-        }
-      }
-      //if both the player and dealer got blackjack then the hand is a push
-      if (player.result === 'blackjack' && dealerScore === 21 && gameState.dealCards.length === 2){
-        player.result = 'push';
       }
     }
   }
