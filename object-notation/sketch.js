@@ -12,6 +12,7 @@ let scaleFactor ={
   y: 1,
 };
 
+let clickReleased = true;
 let guests;
 let my;
 let myHand = [];
@@ -48,6 +49,9 @@ function draw() {
   if(partyIsHost()){
     //gameLogic();
 
+  }
+  if (mouseIsPressed){
+    clickReleased = false;
   }
   drawGameUI();
 }
@@ -126,9 +130,14 @@ function drawButton(x, y, w, h, label, action) {
   text(label, x + w / 2, y + h / 2);
 
   //when the button is clicked
-  if (isHovered && mouseIsPressed) { //CALLED WITHOUT DELAY
+  if (isHovered && mouseIsPressed && clickReleased) { //CALLED WITHOUT DELAY
     action();
+    clickReleased = false;
   }
+}
+
+function mouseReleased(){
+  clickReleased = true;
 }
 
 function gameLogic(){
