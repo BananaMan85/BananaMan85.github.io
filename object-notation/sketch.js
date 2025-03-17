@@ -12,6 +12,14 @@ let scaleFactor ={
   y: 1,
 };
 
+let suits = ["spades", "hearts", "diamonds", "clubs"];
+let values = ["A", "02", "03", "04", "05", "06", "07", "08", "09", "10", "J", "Q", "K"];
+let cards = {
+  hearts: {},
+  diamonds: {},
+  spades: {},
+  clubs: {},
+};
 let clickReleased = true;
 let guests;
 let my;
@@ -21,6 +29,14 @@ const TABLE_SIZE = 4; //maximum amount of players at the table
 const SHOE_SIZE = 6; //amount of decks used in the shoe
 
 function preload() {
+  //preload card images
+  for (let suit of suits){
+    for (let value of values){
+      cards[suit][value] = loadImage("/cards/card_" + suit +"_" + value + ".png");
+    }
+  }
+  
+
   //setup p5.party
   partyConnect(
     "wss://demoserver.p5party.org", 
@@ -52,7 +68,9 @@ function draw() {
     //gameLogic();
 
   }
+
   drawGameUI();
+  image(cards.clubs[0], width/2, height/2);
 }
 
 function drawGameUI() {
@@ -216,8 +234,6 @@ function setupGame(){
 
 function createDeck(){
   //create an array of objects for each card in a standard deck
-  let suits = ["spades", "hearts", "diamonds", "clubs"];
-  let values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
   let deck = [];
 
   //create a deck consisting of as many 52-card decks as specified by the shoe size
