@@ -14,17 +14,14 @@ let scaleFactor ={
 
 let suits = ["spades", "hearts", "diamonds", "clubs"];
 let values = ["A", "02", "03", "04", "05", "06", "07", "08", "09", "10", "J", "Q", "K"];
-let cards = {
-  hearts: {},
-  diamonds: {},
-  spades: {},
-  clubs: {},
-};
+let cards = {};
 let clickReleased = true;
 let guests;
 let my;
 let myHand = [];
 let gameState;
+const CARD_SIZE = 64; //the image files of the cards are 64x64 pixels
+const CARD_WIDTH_MODIFIER = 0.625; //the card images only have a width of ~0.625x their height
 const TABLE_SIZE = 4; //maximum amount of players at the table
 const SHOE_SIZE = 6; //amount of decks used in the shoe
 
@@ -32,11 +29,12 @@ function preload() {
   //preload card images
   for (let suit of suits){
     for (let value of values){
-      cards[suit][value] = loadImage("/cards/card_" + suit +"_" + value + ".png");
+      let key = `${suit}-${value}`;
+      cards[key] = loadImage(`/cards/card_${suit}_${value}.png`);
     }
   }
+  cards.back = loadImage('/cards/card_back.png')
   
-
   //setup p5.party
   partyConnect(
     "wss://demoserver.p5party.org", 
@@ -68,9 +66,11 @@ function draw() {
     //gameLogic();
 
   }
-
-  drawGameUI();
-  image(cards.clubs[0], width/2, height/2);
+  if (gameState.gameStarted){
+    drawGameUI();
+    updateHands();
+  }
+  // image(cards.clubs[0], width/2, height/2);
 }
 
 function drawGameUI() {
@@ -83,11 +83,13 @@ function drawGameUI() {
 }
 
 function drawDealerHand() {
+  let x = width/2 - (gameState.dealerHand.length * 30);
+  let y = height/20 * scaleFactor.y;
   fill(255);
   textSize(24 * scaleFactor.min);
   textAlign(CENTER, CENTER);
   text("Dealer's Hand", width / 2, 50 * scaleFactor.y);
-  drawCards(gameState.dealerHand, width / 2 - (gameState.dealerHand.length * 30), 80);
+  drawCards(gameState.dealerHand, x, y);
 }
 
 function drawPlayerHands() {
@@ -95,47 +97,55 @@ function drawPlayerHands() {
     let player = guests[i];
     if (isUserAtTable(player) && isUserPlaying(player)) {
       let x = width / (TABLE_SIZE + 1) * (i + 1);
-      let y = height - 150 * scaleFactor.y;
+      let y = height - 3*height/20 * scaleFactor.y;
       fill(255);
-      textAlign(CENTER, CENTER);
-      text("Player " + (i + 1), x, y - 30);
-      drawStackedCards(player.hand, x, y);
+      textAlign(LEFT, TOP);
+      text(`Player ${i+1}`, x, y + scaleFactor.cardSize);
+      for (let j = 0; j < player.hands.length; j++){
+        let area = width/(TABLE_SIZE+1);
+        let amountOfHands = player.hands.length;
+        x = area/(amountOfHands)*(j+1);
+        drawStackedCards(player.hands[j], x, y);
+      }
     }
   }
 }
 
 function drawStackedCards(hand, x, y){
   for (let i = 0; i < hand.length; i++){
-    let offset = i*20;
-    fill(255);
-    rect(x + offset, y, 60*scaleFactor.min, 90*scaleFactor.min, 10);
-    fill(0);
-    textAlign(CENTER, CENTER);
-    textSize(20 * scaleFactor.min);
-    text(hand[i].value + "\n" + hand[i].suit, x + offset + 30, y + 45);
+    let offset = i*scaleFactor.cardSize/4;
+    let cardKey = `${hand[i].suit}-${hand[i].value}`;
+    let card = cards[cardKey];
+
+    image(card, x + offset, y - offset, scaleFactor.cardSize, scaleFactor.cardSize)
   }
 }
 
 function drawCards(hand, x, y) {
+  //draw the cards in a hand side-by-side. This is used for the dealer's cards
   for (let i = 0; i < hand.length; i++) {
-    fill(255);
-    rect(x + i * 40, y, 60*scaleFactor.min, 90*scaleFactor.min, 10);
-    fill(0);
-    textAlign(CENTER, CENTER);
-    textSize(20 * scaleFactor.min);
-    text(hand[i].value + "\n" + hand[i].suit, x + i * 40 + 30, y + 45);
+    let cardKey = `${hand[i].suit}-${hand[i].value}`;
+    let card = cards[cardKey];
+
+    if (i === 0 && !gameState.dealerPlay){
+      image(cards.back, x + i*(scaleFactor.cardSize*CARD_WIDTH_MODIFIER), y, scaleFactor.cardSize, scaleFactor.cardSize);
+    }
+    else{
+     image(card, x + i*(scaleFactor.cardSize*CARD_WIDTH_MODIFIER), y, scaleFactor.cardSize, scaleFactor.cardSize);
+    }
   }
 }
 
 function drawButtons() {
-  let buttonY = height - 80 * scaleFactor.y;
-  let buttonX = 120 * scaleFactor.x;
+  //draw the buttons for each action the player can take
+  let buttonY = height/2;
+  let buttonX = width/5;
   let buttonWidth = 100 * scaleFactor.min;
   let buttonHeight = 40 * scaleFactor.min;
-  drawButton(buttonX*0 + 100*scaleFactor.x, buttonY, buttonWidth, buttonHeight, "Hit", hit);
-  drawButton(buttonX*1 + 100*scaleFactor.x, buttonY, buttonWidth, buttonHeight, "Stand", stand);
-  drawButton(buttonX*2 + 100*scaleFactor.x, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
-  drawButton(buttonX*3 + 100*scaleFactor.x, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
+  drawButton(buttonX*1 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Hit", hit);
+  drawButton(buttonX*2 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Stand", stand);
+  drawButton(buttonX*3 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
+  drawButton(buttonX*4 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
 }
 
 function drawBettingInfo() {
@@ -315,17 +325,24 @@ function skipEmptySeats(){
   }
 }
 
+function updateHands(){
+  //ensures information about hands match
+  my.hand = [...my.hands[my.currentHand]];
+  my.hands[my.currentHand] = my.hand;
+}
+
 function playNextHand(){
   //when a player has split their cards move to their next hand after completing one
+  updateHands();
   my.currentHand++;
-  my.hand = my.hands[my.currentHand];
+  my.hand = [...my.hands[my.currentHand]];
   checkBlackjack();
 }
 
 function skipBlackjackHands(player){
   while (player.results[player.currentHand] === 'blackjack'){
     player.currentHand++;
-    player.hand = player.hands[player.currentHand];
+    player.hand = [...player.hands[player.currentHand]];
   }
   if (player.currentHand >= player.hands.length && isMyTurn(player)){
     gameState.currentTurn++;
@@ -379,12 +396,13 @@ function splitCards(){
   my.hands[my.currentHand] = [card1, drawCard()];
   my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
 
-  my.hand = my.hands[my.currentHand];
+  my.hand = [...my.hands[my.currentHand]];
   checkBlackjack();
 }
 
 function bust(){
   //the player has gone over 21
+  console.log(my.hands[0].length);
   my.results[my.currentHand] = 'bust';
 
   if (my.hands.length-1 > my.currentHand){
@@ -480,4 +498,5 @@ function windowResized() {
   scaleFactor.x = width/scaleFactor.width;
   scaleFactor.y = height/scaleFactor.height;
   scaleFactor.min = min(scaleFactor.x, scaleFactor.y);
+  scaleFactor.cardSize = CARD_SIZE*scaleFactor.min;
 }
