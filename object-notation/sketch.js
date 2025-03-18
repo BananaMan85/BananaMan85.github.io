@@ -608,6 +608,21 @@ function payoutWins(){
   }
 }
 
+function mouseWheel(event){
+  //change difficulty based on mouse scroll wheel
+
+  //increase difficulty when scrolling up and decrease when scrolling down
+  if (event.delta < 0){
+    my.wager += 50;
+    my.wager %= my.money;
+  }
+  else if(event.delta > 0){
+    my.wager += -50 + my.money;
+    my.wager %= my.money;
+  }
+  return false;
+}
+
 function isMyTurn(player){
   //check if it is this users turn to act
   return gameState.currentTurn === player.seat;
