@@ -12,6 +12,7 @@ let scaleFactor ={
   y: 1,
 };
 
+let myTextSize = 16;
 let suits = ["spades", "hearts", "diamonds", "clubs"];
 let values = ["A", "02", "03", "04", "05", "06", "07", "08", "09", "10", "J", "Q", "K"];
 let cards = {};
@@ -41,7 +42,7 @@ function preload() {
     "blackjack"
   );
   gameState = partyLoadShared("gameState", {});
-  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0});
+  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0, money: 1000, wager: 100});
   guests = partyLoadGuestShareds();
 }
 
@@ -54,7 +55,7 @@ function setup() {
   if(partyIsHost() && !gameState.hasOwnProperty('gameStarted')){
 
     setupGame();
-    dealCards();
+    // dealCards();
   }
 }
 
@@ -68,9 +69,10 @@ function draw() {
   }
   if (gameState.gameStarted){
     drawGameUI();
+  }
+  if (gameState.dealt){
     updateHands();
   }
-  // image(cards.clubs[0], width/2, height/2);
 }
 
 function drawGameUI() {
@@ -86,7 +88,7 @@ function drawDealerHand() {
   let x = width/2 - (gameState.dealerHand.length * 30);
   let y = height/20 * scaleFactor.y;
   fill(255);
-  textSize(24 * scaleFactor.min);
+  textSize(myTextSize);
   textAlign(CENTER, CENTER);
   text("Dealer's Hand", width / 2, 50 * scaleFactor.y);
   drawCards(gameState.dealerHand, x, y);
@@ -96,19 +98,32 @@ function drawPlayerHands() {
   for (let i = 0; i < guests.length; i++) {
     let player = guests[i];
     if (isUserAtTable(player) && isUserPlaying(player)) {
-      let x = width / (TABLE_SIZE + 1) * (i + 1);
+      let playAreaWidth = width/(TABLE_SIZE+1);
+      let x = (playAreaWidth * (i + 1)) - playAreaWidth/2;
       let y = height - 3*height/20 * scaleFactor.y;
+      let amountOfHands = player.hands.length;
+
       fill(255);
       textAlign(LEFT, TOP);
       text(`Player ${i+1}`, x, y + scaleFactor.cardSize);
-      for (let j = 0; j < player.hands.length; j++){
-        let area = width/(TABLE_SIZE+1);
-        let amountOfHands = player.hands.length;
-        x = area/(amountOfHands)*(j+1);
-        drawStackedCards(player.hands[j], x, y);
+
+      for (let j = 0; j < amountOfHands; j++){
+        let handAreaWidth = playAreaWidth/amountOfHands;
+        let handX = x - (playAreaWidth/2) + handAreaWidth * j + handAreaWidth/2;
+        drawStackedCards(player.hands[j], handX, y);
+        drawHandInfo(player, j, handX + (scaleFactor.cardSize * CARD_WIDTH_MODIFIER)/2, y + scaleFactor.cardSize + myTextSize);
       }
     }
   }
+}
+
+function drawHandInfo(player, handIndex, x, y){
+  let activeHand = '';
+  if (player.currentHand === handIndex && isMyTurn(player)){
+    activeHand = 'ACTIVE'
+  }
+  textAlign(CENTER,TOP);
+  text(`${calculateHandValue(player.hands[handIndex])} \nBet: ${player.bets[handIndex]} \nResult: ${player.results[handIndex]} \n${activeHand}`, x, y)
 }
 
 function drawStackedCards(hand, x, y){
@@ -150,9 +165,9 @@ function drawButtons() {
 
 function drawBettingInfo() {
   fill(255);
-  textSize(20 * scaleFactor.min);
+  textSize(myTextSize);
   textAlign(LEFT, TOP);
-  text("Bet: " + my.bets[my.currentHand] + "\nResult: " + my.results[my.currentHand], 20, 20);
+  text(`Wager: ${my.wager} \nMoney: ${my.money}`, 20, 20);
 }
 
 
@@ -168,7 +183,7 @@ function drawButton(x, y, w, h, label, action) {
   //text style
   fill(0);
   textAlign(CENTER, CENTER);
-  textSize(16*scaleFactor.min);
+  textSize(myTextSize);
   text(label, x + w / 2, y + h / 2);
 
   //when the button is clicked
@@ -226,10 +241,6 @@ function currentPlayer(){
   return {};
 }
 
-// function generateId(){
-//   return str(floor(random(10**8)));
-// }
-
 function setupGame(){
   //setup the shared gameState object and the deck
   let deck = shuffleDeck(createDeck());
@@ -282,6 +293,9 @@ function dealCards(){
   }
   gameState.dealerHand = [drawCard(), drawCard()];
   gameState.dealt = true;
+  for (let player of guests){
+    player.bets[0] = player.wager;
+  }
   checkBlackjack();
 }
 
@@ -327,8 +341,10 @@ function skipEmptySeats(){
 
 function updateHands(){
   //ensures information about hands match
-  my.hand = [...my.hands[my.currentHand]];
-  my.hands[my.currentHand] = my.hand;
+  if (my.currentHand < my.hands.length){
+    my.hand = [...my.hands[my.currentHand]];
+    my.hands[my.currentHand] = my.hand;
+  }
 }
 
 function playNextHand(){
@@ -342,7 +358,9 @@ function playNextHand(){
 function skipBlackjackHands(player){
   while (player.results[player.currentHand] === 'blackjack'){
     player.currentHand++;
-    player.hand = [...player.hands[player.currentHand]];
+    if (player.currentHand < player.hands.length){
+      player.hand = [...player.hands[player.currentHand]];
+    }
   }
   if (player.currentHand >= player.hands.length && isMyTurn(player)){
     gameState.currentTurn++;
@@ -402,7 +420,6 @@ function splitCards(){
 
 function bust(){
   //the player has gone over 21
-  console.log(my.hands[0].length);
   my.results[my.currentHand] = 'bust';
 
   if (my.hands.length-1 > my.currentHand){
@@ -499,4 +516,5 @@ function windowResized() {
   scaleFactor.y = height/scaleFactor.height;
   scaleFactor.min = min(scaleFactor.x, scaleFactor.y);
   scaleFactor.cardSize = CARD_SIZE*scaleFactor.min;
+  myTextSize = 16 * scaleFactor.min;
 }
