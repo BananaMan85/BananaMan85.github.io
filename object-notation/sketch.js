@@ -12,6 +12,8 @@ let scaleFactor ={
   y: 1,
 };
 
+let playerActionTime = 20000; //players have 20s to act
+let lastPlayerAction = 0;
 let myTextSize = 16;
 let suits = ["spades", "hearts", "diamonds", "clubs"];
 let values = ["A", "02", "03", "04", "05", "06", "07", "08", "09", "10", "J", "Q", "K"];
@@ -42,7 +44,7 @@ function preload() {
     "blackjack"
   );
   gameState = partyLoadShared("gameState", {});
-  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0, money: 1000, wager: 100});
+  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0, money: 1000, wager: 100, lastWin: 0});
   guests = partyLoadGuestShareds();
 }
 
@@ -69,6 +71,15 @@ function draw() {
   }
   if (gameState.gameStarted){
     drawGameUI();
+
+    //force player to stand after 20s of no action
+    if (!isMyTurn(my) || !gameState.dealt){
+      lastPlayerAction = millis();
+    }
+    else if (millis() - lastPlayerAction > playerActionTime){
+      lastPlayerAction = millis();
+      stand();
+    }
   }
   if (gameState.dealt){
     updateHands();
@@ -87,31 +98,36 @@ function drawGameUI() {
 function drawDealerHand() {
   let x = width/2 - (gameState.dealerHand.length * 30);
   let y = height/20 * scaleFactor.y;
+  let score = '';
+  if (gameState.dealerPlay){
+    score = `: ${calculateHandValue(gameState.dealerHand)}`;
+  }
   fill(255);
   textSize(myTextSize);
   textAlign(CENTER, CENTER);
-  text("Dealer's Hand", width / 2, 50 * scaleFactor.y);
+  text("Dealer's Hand" + score, width / 2, 50 * scaleFactor.y);
   drawCards(gameState.dealerHand, x, y);
 }
 
 function drawPlayerHands() {
   for (let i = 0; i < guests.length; i++) {
     let player = guests[i];
+    let seat = player.seat;
     if (isUserAtTable(player) && isUserPlaying(player)) {
       let playAreaWidth = width/(TABLE_SIZE+1);
-      let x = (playAreaWidth * (i + 1)) - playAreaWidth/2;
+      let x = (playAreaWidth * (seat + 1));
       let y = height - 3*height/20 * scaleFactor.y;
       let amountOfHands = player.hands.length;
 
       fill(255);
       textAlign(LEFT, TOP);
-      text(`Player ${i+1}`, x, y + scaleFactor.cardSize);
+      text(`Player ${seat+1}`, x, y + scaleFactor.cardSize);
 
       for (let j = 0; j < amountOfHands; j++){
         let handAreaWidth = playAreaWidth/amountOfHands;
         let handX = x - (playAreaWidth/2) + handAreaWidth * j + handAreaWidth/2;
         drawStackedCards(player.hands[j], handX, y);
-        drawHandInfo(player, j, handX + (scaleFactor.cardSize * CARD_WIDTH_MODIFIER)/2, y + scaleFactor.cardSize + myTextSize);
+        drawHandInfo(player, j, handX + (scaleFactor.cardSize)/2, y + scaleFactor.cardSize + myTextSize);
       }
     }
   }
@@ -167,7 +183,7 @@ function drawBettingInfo() {
   fill(255);
   textSize(myTextSize);
   textAlign(LEFT, TOP);
-  text(`Wager: ${my.wager} \nMoney: ${my.money}`, 20, 20);
+  text(`Player ${my.seat+1} \nWager: ${my.wager} \nMoney: ${my.money}`, 20, 20);
 }
 
 
@@ -188,6 +204,7 @@ function drawButton(x, y, w, h, label, action) {
 
   //when the button is clicked
   if (isHovered && mouseIsPressed && clickReleased) {
+    lastPlayerAction = millis();
     action();
     clickReleased = false;
   }
@@ -195,10 +212,6 @@ function drawButton(x, y, w, h, label, action) {
 
 function mouseReleased(){
   clickReleased = true;
-}
-
-function gameLogic(){
-
 }
 
 function findSeat(){
@@ -253,6 +266,21 @@ function setupGame(){
   });
 }
 
+function resetBoard(){
+  //reset the cards and bets of each player and the dealer
+  for (let player of guests){
+    player.bets = [];
+    player.results = [];
+    player.hands = [];
+    player.currentHand = 0;
+    delete player.hand;
+  }
+  gameState.dealerHand = 0;
+  gameState.dealerPlay = false;
+  gameState.currentTurn = 0;
+  delete gameState.dealt;
+}
+
 function createDeck(){
   //create an array of objects for each card in a standard deck
   let deck = [];
@@ -279,7 +307,14 @@ function shuffleDeck(deck){
 
 function drawCard(){
   //draws a card from the deck
-  return gameState.deck.pop();
+  let card = gameState.deck.pop();
+
+  //reshuffles the shoe if it reaches below half
+  if (gameState.deck.length < (52*SHOE_SIZE)/2){
+    gameState.deck = shuffleDeck(createDeck());
+  }
+
+  return card;
 }
 
 function dealCards(){
@@ -287,6 +322,7 @@ function dealCards(){
   if (gameState.hasOwnProperty('dealt')) return;
   for (let player of guests){
     if (isUserAtTable(player)){
+      player.bets[0] = player.wager;
       player.hand = [drawCard(), drawCard()];
       player.hands.push(player.hand);
     }
@@ -499,6 +535,28 @@ function determineWinners(){
       }
     }
     player.currentHand = 0;
+  }
+  payoutWins();
+}
+
+function payoutWins(){
+  for (let player of guests){
+    player.lastWin = 0;
+    for (let i = 0; i < player.bets.length; i++){
+      if (player.results[i] === 'win'){
+        player.lastWin += player.bets[i];
+      }
+      else if (player.results[i] === 'blackjack'){
+        player.lastWin += player.bets[i] * (3/2);
+      }
+      else if (player.results[i] === 'push'){
+        player.lastWin += 0;
+      }
+      else{
+        player.lastWin -= player.bets[i];
+      }
+    }
+    player.money += player.lastWin;
   }
 }
 
