@@ -68,8 +68,7 @@ function draw() {
 
   //only the host runs the logic of the game
   if(partyIsHost()){
-    resetBoard();
-    gameState.timer = millis();
+    gameLogic();
 
   }
   if (gameState.gameStarted){
@@ -120,7 +119,7 @@ function drawPlayerHands() {
     let seat = player.seat;
     if (isUserAtTable(player) && isUserPlaying(player)) {
       let playAreaWidth = width/(TABLE_SIZE+1);
-      let x = (playAreaWidth * (seat + 1));
+      let x = playAreaWidth * (seat + 1);
       let y = height - 4*height/20;
       let amountOfHands = player.hands.length;
 
@@ -130,7 +129,7 @@ function drawPlayerHands() {
 
       for (let j = 0; j < amountOfHands; j++){
         let handAreaWidth = playAreaWidth/amountOfHands;
-        let handX = x - (playAreaWidth/2) + handAreaWidth * j + handAreaWidth/2;
+        let handX = x - playAreaWidth/2 + handAreaWidth * j + handAreaWidth/2;
         let isDoubled = false;
         if (player.bets[j] === 2*player.originalBet){
           isDoubled = true;
@@ -312,6 +311,23 @@ function hostChangesTurn(){
   }
 }
 
+function hostChecksBlackjack(){
+  for (let player of guests){
+    if (player.checkBlackjack === true){
+      checkBlackjack();
+      player.checkBlackjack = false;
+    }
+  }
+}
+
+function gameLogic(){
+  resetBoard();
+  hostChangesTurn();
+  hostChecksBlackjack();
+  checkDealerTurn();
+  gameState.timer = millis();
+}
+
 function setupGame(){
   //setup the shared gameState object and the deck
   let deck = shuffleDeck(createDeck());
@@ -337,8 +353,10 @@ function resetBoard(){
       player.results = ['none'];
       player.hands = [];
       player.currentHand = 0;
+      player.advanceTurn = false;
       delete player.hand;
     }
+    gameState.roundDone = false;
     gameState.dealerHand = 0;
     gameState.dealerPlay = false;
     gameState.currentTurn = 0;
@@ -353,7 +371,7 @@ function updateMoney(){
     my.money = my.originalMoney;
     let sum = my.originalMoney;
     for (let bet of my.bets){
-    sum -= bet;
+      sum -= bet;
     }
     my.money = sum;
   }
@@ -388,7 +406,7 @@ function drawCard(){
   let card = gameState.deck.pop();
 
   //reshuffles the shoe if it reaches below half
-  if (gameState.deck.length < (52*SHOE_SIZE)/2){
+  if (gameState.deck.length < 52*SHOE_SIZE/2){
     gameState.deck = shuffleDeck(createDeck());
   }
 
@@ -417,7 +435,7 @@ function dealCards(){
   }
   gameState.dealerHand = [drawCard(), drawCard()];
   gameState.dealt = true;
-  checkBlackjack();
+  my.checkBlackjack = true;
 }
 
 function checkBlackjack(){
@@ -436,7 +454,6 @@ function checkBlackjack(){
   //check for dealer blackjacks
   if (calculateHandValue(gameState.dealerHand) === 21){
     gameState.currentTurn = TABLE_SIZE;
-    checkDealerTurn();
   }
 }
 
@@ -452,8 +469,9 @@ function checkDealerTurn(){
 function skipEmptySeats(){
   //pass over any empty seats until the next occupied seat is reached
   for (let i = 0; i < TABLE_SIZE; i++){
-    if (!isUserPlaying(currentPlayer())){
-      gameState.currentTurn++;
+    if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
+      my.advanceTurn = true;
+      hostChangesTurn();
     }
     else{
       return;
@@ -474,7 +492,7 @@ function playNextHand(){
   updateHands();
   my.currentHand++;
   my.hand = [...my.hands[my.currentHand]];
-  checkBlackjack();
+  my.checkBlackjack = true;
 }
 
 function skipBlackjackHands(player){
@@ -485,8 +503,7 @@ function skipBlackjackHands(player){
     }
   }
   if (player.currentHand >= player.hands.length && isMyTurn(player)){
-    gameState.currentTurn++;
-    checkDealerTurn();
+    my.advanceTurn = true;
   }
 }
 
@@ -508,8 +525,7 @@ function stand(){
     playNextHand();
   }
   else{
-    gameState.currentTurn++;
-    checkDealerTurn();
+    my.advanceTurn = true;
   }
 }
 
@@ -545,7 +561,7 @@ function splitCards(){
   my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
 
   my.hand = [...my.hands[my.currentHand]];
-  checkBlackjack();
+  my.checkBlackjack = true;
 }
 
 function bust(){
@@ -556,8 +572,7 @@ function bust(){
     playNextHand();
   }
   else{
-    gameState.currentTurn++;
-    checkDealerTurn();
+    my.advanceTurn = true;
   }
 }
 
@@ -597,11 +612,12 @@ function calculateHandValue(hand){
 
 function dealerPlay(){
   //the dealer draws cards until it reaches 17
-  gameState.dealerPlay = true;
-  if (partyIsHost()){
+  if (!gameState.roundDone){
+    gameState.dealerPlay = true;
     while (calculateHandValue(gameState.dealerHand) < 17){
-    gameState.dealerHand.push(drawCard());
+      gameState.dealerHand.push(drawCard());
     }
+    gameState.roundDone = true;
     determineWinners();
   }
 }
