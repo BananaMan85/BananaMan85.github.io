@@ -303,6 +303,15 @@ function currentPlayer(){
   return {};
 }
 
+function hostChangesTurn(){
+  for (let player of guests){
+    if (player.advanceTurn === true){
+      gameState.currentTurn++;
+      player.advanceTurn = false;
+    }
+  }
+}
+
 function setupGame(){
   //setup the shared gameState object and the deck
   let deck = shuffleDeck(createDeck());
@@ -589,10 +598,12 @@ function calculateHandValue(hand){
 function dealerPlay(){
   //the dealer draws cards until it reaches 17
   gameState.dealerPlay = true;
-  while (calculateHandValue(gameState.dealerHand) < 17){
+  if (partyIsHost()){
+    while (calculateHandValue(gameState.dealerHand) < 17){
     gameState.dealerHand.push(drawCard());
+    }
+    determineWinners();
   }
-  determineWinners();
 }
 
 function determineWinners(){
