@@ -119,7 +119,7 @@ function drawPlayerHands() {
     let seat = player.seat;
     if (isUserAtTable(player) && isUserPlaying(player)) {
       let playAreaWidth = width/(TABLE_SIZE+1);
-      let x = (playAreaWidth * (seat + 1));
+      let x = playAreaWidth * (seat + 1);
       let y = height - 4*height/20;
       let amountOfHands = player.hands.length;
 
@@ -129,7 +129,7 @@ function drawPlayerHands() {
 
       for (let j = 0; j < amountOfHands; j++){
         let handAreaWidth = playAreaWidth/amountOfHands;
-        let handX = x - (playAreaWidth/2) + handAreaWidth * j + handAreaWidth/2;
+        let handX = x - playAreaWidth/2 + handAreaWidth * j + handAreaWidth/2;
         let isDoubled = false;
         if (player.bets[j] === 2*player.originalBet){
           isDoubled = true;
@@ -353,6 +353,7 @@ function resetBoard(){
       player.results = ['none'];
       player.hands = [];
       player.currentHand = 0;
+      player.advanceTurn = false;
       delete player.hand;
     }
     gameState.roundDone = false;
@@ -370,7 +371,7 @@ function updateMoney(){
     my.money = my.originalMoney;
     let sum = my.originalMoney;
     for (let bet of my.bets){
-    sum -= bet;
+      sum -= bet;
     }
     my.money = sum;
   }
@@ -405,7 +406,7 @@ function drawCard(){
   let card = gameState.deck.pop();
 
   //reshuffles the shoe if it reaches below half
-  if (gameState.deck.length < (52*SHOE_SIZE)/2){
+  if (gameState.deck.length < 52*SHOE_SIZE/2){
     gameState.deck = shuffleDeck(createDeck());
   }
 
@@ -470,6 +471,7 @@ function skipEmptySeats(){
   for (let i = 0; i < TABLE_SIZE; i++){
     if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
       my.advanceTurn = true;
+      hostChangesTurn();
     }
     else{
       return;
@@ -613,9 +615,9 @@ function dealerPlay(){
   if (!gameState.roundDone){
     gameState.dealerPlay = true;
     while (calculateHandValue(gameState.dealerHand) < 17){
-    gameState.dealerHand.push(drawCard());
+      gameState.dealerHand.push(drawCard());
     }
-    gameState.roundDone = true
+    gameState.roundDone = true;
     determineWinners();
   }
 }
