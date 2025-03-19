@@ -46,7 +46,7 @@ function preload() {
     "blackjack"
   );
   gameState = partyLoadShared("gameState", {});
-  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [100], hands: [], currentHand: 0, money: 1000, wager: 100, lastWin: 0});
+  my = partyLoadMyShared({seat: -1, results: ['none'], bets: [], hands: [], currentHand: 0, money: 1000, wager: 100, lastWin: 0, originalBet: 0, originalMoney: 1000});
   guests = partyLoadGuestShareds();
 }
 
@@ -68,7 +68,7 @@ function draw() {
 
   //only the host runs the logic of the game
   if(partyIsHost()){
-    //gameLogic();
+    resetBoard();
 
   }
   if (gameState.gameStarted){
@@ -84,6 +84,7 @@ function draw() {
     }
   }
   if (gameState.dealt){
+    updateMoney();
     updateHands();
   }
 }
@@ -130,7 +131,7 @@ function drawPlayerHands() {
         let handAreaWidth = playAreaWidth/amountOfHands;
         let handX = x - (playAreaWidth/2) + handAreaWidth * j + handAreaWidth/2;
         let isDoubled = false;
-        if (player.bets[j] === 2*player.wager){
+        if (player.bets[j] === 2*player.originalBet){
           isDoubled = true;
         }
         drawStackedCards(player.hands[j], handX, y, isDoubled);
@@ -146,7 +147,7 @@ function drawHandInfo(player, handIndex, x, y){
     activeHand = 'ACTIVE';
   }
   textAlign(CENTER,TOP);
-  text(`${calculateHandValue(player.hands[handIndex])} \nBet: ${player.bets[handIndex]} \nResult: ${player.results[handIndex]} \n${activeHand}`, x, y);
+  text(`${calculateHandValue(player.hands[handIndex])} \nBet: $${player.bets[handIndex]} \nResult: ${player.results[handIndex]} \n${activeHand}`, x, y);
 }
 
 function drawStackedCards(hand, x, y, isDoubled){
@@ -198,7 +199,7 @@ function drawBettingInfo() {
   fill(255);
   textSize(myTextSize);
   textAlign(LEFT, TOP);
-  text(`Player ${my.seat+1} \nWager: ${my.wager} \nMoney: ${my.money}`, 20, 20);
+  text(`Player ${my.seat+1} \nWager: $${my.wager} \nMoney: $${my.money}`, 20, 20);
 }
 
 function drawResults(){
@@ -210,20 +211,27 @@ function drawResults(){
   textSize(myTextSize);
   let handResult;
   let dealerBlackjack = '';
-  
-  if (my.lastWin > 0){
-    handResult = `You Win $${my.lastWin}!`;
+
+  let sum = 0;
+  for (let bet of my.bets){
+    sum += bet;
   }
-  else if (my.lastWin < 0){
-    handResult = `You Lost $${-my.lastWin}`;
+  
+  if (my.lastWin === sum){
+    handResult = "Push!";
+  }
+  else if (my.lastWin === 0){
+    handResult = `You Lost`;
   }
   else{
-    handResult = "Push!";
+    handResult = `You Win $${my.lastWin}!`;
   }
   if (calculateHandValue(gameState.dealerHand) === 21 && gameState.dealerHand.length === 2){
     dealerBlackjack = "Dealer Blackjack";
   }
-  text(`${dealerBlackjack} \n${handResult}`, width/2, height/2 - BUTTON_HEIGHT*scaleFactor.min);
+  let timer = ceil((gameState.lastReset-millis()+gameState.resetTime)/1000); //time until the board resets
+
+  text(`${dealerBlackjack} \n${handResult} \n${timer}`, width/2, height/2 - BUTTON_HEIGHT*scaleFactor.min);
 }
 
 
@@ -303,22 +311,41 @@ function setupGame(){
     currentTurn: 0,
     gameStarted: true,
     dealerPlay: false,
+    resetTime: 5000,
+    lastReset: 0,
+    reset: false,
   });
 }
 
 function resetBoard(){
   //reset the cards and bets of each player and the dealer
-  for (let player of guests){
-    player.bets = [];
-    player.results = [];
-    player.hands = [];
-    player.currentHand = 0;
-    delete player.hand;
+  if (millis() - gameState.lastReset > gameState.resetTime && gameState.dealerPlay){
+    gameState.lastReset = millis();
+    for (let player of guests){
+      player.bets = [];
+      player.results = ['none'];
+      player.hands = [];
+      player.currentHand = 0;
+      delete player.hand;
+    }
+    gameState.dealerHand = 0;
+    gameState.dealerPlay = false;
+    gameState.currentTurn = 0;
+    gameState.reset = false;
+    delete gameState.dealt;
   }
-  gameState.dealerHand = 0;
-  gameState.dealerPlay = false;
-  gameState.currentTurn = 0;
-  delete gameState.dealt;
+  dealCards();
+}
+
+function updateMoney(){
+  if (!gameState.dealerPlay){
+    my.money = my.originalMoney;
+    let sum = my.originalMoney;
+    for (let bet of my.bets){
+    sum -= bet;
+    }
+    my.money = sum;
+  }
 }
 
 function createDeck(){
@@ -363,17 +390,22 @@ function dealCards(){
     return;
   }
   for (let player of guests){
-    if (isUserAtTable(player)){
+    player.originalMoney = player.money;
+
+    //if a player runs out of money give them $50 to continue playing
+    if (player.money <= 0){
+      player.money = 50;
+      player.originalMoney = 50;
+    }
+    if (isUserAtTable(player) && player.wager > 0 && player.wager <= player.money){
       player.bets[0] = player.wager;
+      player.originalBet = player.wager;
       player.hand = [drawCard(), drawCard()];
       player.hands.push(player.hand);
     }
   }
   gameState.dealerHand = [drawCard(), drawCard()];
   gameState.dealt = true;
-  for (let player of guests){
-    player.bets[0] = player.wager;
-  }
   checkBlackjack();
 }
 
@@ -383,7 +415,7 @@ function checkBlackjack(){
   //check for player blackjacks
   for (let player of guests){
     for (let i = 0; i < player.hands.length; i++){
-      if (calculateHandValue(player.hands[i]) === 21 && isUserPlaying(player)){
+      if (calculateHandValue(player.hands[i]) === 21 && player.hands[i].length === 2 && isUserPlaying(player)){
         player.results[i] = 'blackjack';
       }
     }
@@ -401,6 +433,7 @@ function checkDealerTurn(){
   //check if all players have completed their actions and it is now the dealers turn
   skipEmptySeats();
   if (gameState.currentTurn >= TABLE_SIZE){
+    updateMoney();
     dealerPlay();
   }
 }
@@ -471,21 +504,23 @@ function stand(){
 
 function doubleDown(){
   //the player doubles down by doubling their bet and drawing a single extra card
-  if (!isMyTurn(my) || my.hand.length !== 2) {
+  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
     return;
   }
   my.bets[my.currentHand] *= 2;
   my.hand.push(drawCard());
+  my.hands[my.currentHand] = [...my.hand];
 
+  let thisHand = my.currentHand;
   checkBust(my.hand);
-  if (my.results[my.currentHand] !== 'bust'){
+  if (my.results[thisHand] !== 'bust'){
     stand();
   }
 }
 
 function splitCards(){
   //the player splits their hand into two seperate hands by matching their original bet. only possible when dealt two cards of the same value
-  if (!isMyTurn(my) || my.hand.length !== 2) {
+  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
     return;
   }
   let [card1, card2] = my.hand;
@@ -493,7 +528,7 @@ function splitCards(){
     return;
   }
   //duplicate the original bet and seperate cards into two and deal each new hand an additional card
-  my.bets.push(my.bets[0]);
+  my.bets.push(my.originalBet);
   my.results.push('none');
   my.hands[my.currentHand] = [card1, drawCard()];
   my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
@@ -585,6 +620,8 @@ function determineWinners(){
     player.currentHand = 0;
   }
   payoutWins();
+  gameState.lastReset = millis()
+  gameState.reset = true;
 }
 
 function payoutWins(){
@@ -592,16 +629,16 @@ function payoutWins(){
     player.lastWin = 0;
     for (let i = 0; i < player.bets.length; i++){
       if (player.results[i] === 'win'){
-        player.lastWin += player.bets[i];
+        player.lastWin += player.bets[i] * 2;
       }
       else if (player.results[i] === 'blackjack'){
-        player.lastWin += player.bets[i] * (3/2);
+        player.lastWin += player.bets[i] * (5/2);
       }
       else if (player.results[i] === 'push'){
-        player.lastWin += 0;
+        player.lastWin += player.bets[i];
       }
       else{
-        player.lastWin -= player.bets[i];
+        player.lastWin += 0;
       }
     }
     player.money += player.lastWin;
@@ -609,16 +646,17 @@ function payoutWins(){
 }
 
 function mouseWheel(event){
-  //change difficulty based on mouse scroll wheel
-
-  //increase difficulty when scrolling up and decrease when scrolling down
+  //change wager based on mouse scroll wheel
+  
+  let increment = 50;
+  //increase wager by 50 when scrolling up and decrease when scrolling down
   if (event.delta < 0){
-    my.wager += 50;
-    my.wager %= my.money;
+    my.wager += increment;
+    my.wager %= my.money + increment;
   }
   else if(event.delta > 0){
-    my.wager += -50 + my.money;
-    my.wager %= my.money;
+    my.wager += -50 + my.money + increment;
+    my.wager %= my.money + increment;
   }
   return false;
 }
