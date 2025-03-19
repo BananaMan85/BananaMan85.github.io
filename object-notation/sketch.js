@@ -35,10 +35,10 @@ function preload() {
   for (let suit of suits){
     for (let value of values){
       let key = `${suit}-${value}`;
-      cards[key] = loadImage(`/cards/card_${suit}_${value}.png`);
+      cards[key] = loadImage(`../cards/card_${suit}_${value}.png`);
     }
   }
-  cards.back = loadImage('/cards/card_back.png');
+  cards.back = loadImage('../cards/card_back.png');
   
   //setup p5.party
   partyConnect(
