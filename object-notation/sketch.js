@@ -69,6 +69,7 @@ function draw() {
   //only the host runs the logic of the game
   if(partyIsHost()){
     resetBoard();
+    gameState.timer = millis();
 
   }
   if (gameState.gameStarted){
@@ -229,7 +230,7 @@ function drawResults(){
   if (calculateHandValue(gameState.dealerHand) === 21 && gameState.dealerHand.length === 2){
     dealerBlackjack = "Dealer Blackjack";
   }
-  let timer = ceil((gameState.lastReset-millis()+gameState.resetTime)/1000); //time until the board resets
+  let timer = ceil((gameState.lastReset-gameState.timer+gameState.resetTime)/1000); //time until the board resets
 
   text(`${dealerBlackjack} \n${handResult} \n${timer}`, width/2, height/2 - BUTTON_HEIGHT*scaleFactor.min);
 }
@@ -314,13 +315,14 @@ function setupGame(){
     resetTime: 5000,
     lastReset: 0,
     reset: false,
+    timer: 0,
   });
 }
 
 function resetBoard(){
   //reset the cards and bets of each player and the dealer
-  if (millis() - gameState.lastReset > gameState.resetTime && gameState.dealerPlay){
-    gameState.lastReset = millis();
+  if (gameState.timer - gameState.lastReset > gameState.resetTime && gameState.dealerPlay){
+    gameState.lastReset = gameState.timer;
     for (let player of guests){
       player.bets = [];
       player.results = ['none'];
@@ -620,7 +622,7 @@ function determineWinners(){
     player.currentHand = 0;
   }
   payoutWins();
-  gameState.lastReset = millis()
+  gameState.lastReset = gameState.timer;
   gameState.reset = true;
 }
 
