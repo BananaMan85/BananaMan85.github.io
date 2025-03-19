@@ -322,7 +322,7 @@ function hostChecksBlackjack(){
 
 function gameLogic(){
   resetBoard();
-  hostChangesTurn();
+  // hostChangesTurn();
   hostChecksBlackjack();
   checkDealerTurn();
   gameState.timer = millis();
@@ -471,7 +471,8 @@ function skipEmptySeats(){
   for (let i = 0; i < TABLE_SIZE; i++){
     if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
       my.advanceTurn = true;
-      hostChangesTurn();
+      gameState.currentTurn++;
+      // hostChangesTurn();
     }
     else{
       return;
@@ -504,6 +505,7 @@ function skipBlackjackHands(player){
   }
   if (player.currentHand >= player.hands.length && isMyTurn(player)){
     my.advanceTurn = true;
+    gameState.currentTurn++;
   }
 }
 
@@ -526,6 +528,7 @@ function stand(){
   }
   else{
     my.advanceTurn = true;
+    gameState.currentTurn++;
   }
 }
 
@@ -573,6 +576,7 @@ function bust(){
   }
   else{
     my.advanceTurn = true;
+    gameState.currentTurn++;
   }
 }
 
