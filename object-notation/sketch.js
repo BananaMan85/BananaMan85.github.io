@@ -23,7 +23,7 @@ let guests;
 let my;
 let myHand = [];
 let gameState;
-const CARD_SIZE = 64; //the image files of the cards are 64x64 pixels
+const CARD_SIZE = 100; //the image files of the cards are 64x64 pixels
 const CARD_WIDTH_MODIFIER = 0.625; //the card images only have a width of ~0.625x their height
 const TABLE_SIZE = 4; //maximum amount of players at the table
 const SHOE_SIZE = 6; //amount of decks used in the shoe
@@ -55,11 +55,10 @@ function setup() {
   windowResized();
 
   partyToggleInfo(true);
-  findSeat();
+
   if(partyIsHost() && !gameState.hasOwnProperty('gameStarted')){
 
     setupGame();
-    // dealCards();
   }
 }
 
@@ -74,8 +73,12 @@ function draw() {
   if (gameState.gameStarted){
     drawGameUI();
 
+    if (my.seat === gameState.currentTurn-1){
+      checkDealerTurn();
+    }
+
     //force player to stand after 20s of no action
-    if (!isMyTurn(my) || !gameState.dealt){
+    if (!isMyTurn(my) || !gameState.dealt || millis() - lastPlayerAction > playerActionTime*(3/2)){
       lastPlayerAction = millis();
     }
     else if (millis() - lastPlayerAction > playerActionTime){
@@ -101,7 +104,7 @@ function drawGameUI() {
 
 function drawDealerHand() {
   let x = width/2 - scaleFactor.cardSize*CARD_WIDTH_MODIFIER;
-  let y = height/20 * scaleFactor.y;
+  let y = scaleFactor.cardSize;
   let score = '';
   if (gameState.dealerPlay){
     score = `: ${calculateHandValue(gameState.dealerHand)}`;
@@ -120,7 +123,7 @@ function drawPlayerHands() {
     if (isUserAtTable(player) && isUserPlaying(player)) {
       let playAreaWidth = width/(TABLE_SIZE+1);
       let x = playAreaWidth * (seat + 1);
-      let y = height - 4*height/20;
+      let y = height - scaleFactor.cardSize*2;
       let amountOfHands = player.hands.length;
 
       fill(255);
@@ -193,6 +196,10 @@ function drawButtons() {
   drawButton(buttonX*2 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Stand", stand);
   drawButton(buttonX*3 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
   drawButton(buttonX*4 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
+
+  if (my.seat === -1){
+    drawButton(width/2 - buttonWidth/2, buttonY + buttonHeight, buttonWidth, buttonHeight, "Find Seat", findSeat);
+  }
 }
 
 function drawBettingInfo() {
@@ -313,7 +320,7 @@ function hostChangesTurn(){
 
 function hostChecksBlackjack(){
   for (let player of guests){
-    if (player.checkBlackjack === true){
+    if (player.checkBlackjack === true && currentPlayer() === player){
       checkBlackjack();
       player.checkBlackjack = false;
     }
@@ -324,7 +331,6 @@ function gameLogic(){
   resetBoard();
   // hostChangesTurn();
   hostChecksBlackjack();
-  checkDealerTurn();
   gameState.timer = millis();
 }
 
@@ -431,11 +437,11 @@ function dealCards(){
       player.originalBet = player.wager;
       player.hand = [drawCard(), drawCard()];
       player.hands.push(player.hand);
+      player.checkBlackjack = true;
     }
   }
   gameState.dealerHand = [drawCard(), drawCard()];
   gameState.dealt = true;
-  my.checkBlackjack = true;
 }
 
 function checkBlackjack(){
@@ -458,8 +464,10 @@ function checkBlackjack(){
 }
 
 function checkDealerTurn(){
-  //check if all players have completed their actions and it is now the dealers turn
-  skipEmptySeats();
+  //check if all players have completed their actions and it is now the dealer's turn
+  if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
+    skipEmptySeats();
+  }
   if (gameState.currentTurn >= TABLE_SIZE){
     updateMoney();
     dealerPlay();
