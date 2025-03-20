@@ -56,6 +56,7 @@ function preload() {
 function setup() {
   createCanvas(800, 800);
   windowResized();
+  partyToggleInfo(false);
 
   //start the game
   if(partyIsHost() && !gameState.hasOwnProperty('gameStarted')){
