@@ -5,6 +5,7 @@
 // Extra for Experts:
 // This project incorporates p5 party
 
+//scale factor to quickly modify the sizes of parts of the game based on the window size
 let scaleFactor ={
   width: 800,
   height: 800,
@@ -12,8 +13,10 @@ let scaleFactor ={
   y: 1,
 };
 
-let playerActionTime = 20000; //players have 20s to act
+//inialize variables and constants
+let playerActionTime = 30000; //players have 30s to act
 let lastPlayerAction = 0;
+let hasClockReset = false;
 let myTextSize = 16;
 let suits = ["spades", "hearts", "diamonds", "clubs"];
 let values = ["A", "02", "03", "04", "05", "06", "07", "08", "09", "10", "J", "Q", "K"];
@@ -54,10 +57,8 @@ function setup() {
   createCanvas(800, 800);
   windowResized();
 
-  partyToggleInfo(true);
-
+  //start the game
   if(partyIsHost() && !gameState.hasOwnProperty('gameStarted')){
-
     setupGame();
   }
 }
@@ -68,24 +69,33 @@ function draw() {
   //only the host runs the logic of the game
   if(partyIsHost()){
     gameLogic();
-
   }
+
   if (gameState.gameStarted){
+    //draw the user interaface for the game
     drawGameUI();
 
+    //check if the it's the dealer's turn after passing your own turn
     if (my.seat === gameState.currentTurn-1){
       checkDealerTurn();
     }
 
-    //force player to stand after 20s of no action
-    if (!isMyTurn(my) || !gameState.dealt || millis() - lastPlayerAction > playerActionTime*(3/2)){
+    //force player to stand after 30s of no action
+    if (!isMyTurn(my) || !gameState.dealt){
       lastPlayerAction = millis();
+      hasClockReset = false;
+    }
+    else if (!hasClockReset){
+      lastPlayerAction = millis();
+      hasClockReset = true;
     }
     else if (millis() - lastPlayerAction > playerActionTime){
       lastPlayerAction = millis();
       stand();
     }
   }
+
+  //keep hands and money properly in sync
   if (gameState.dealt){
     updateMoney();
     updateHands();
@@ -93,6 +103,7 @@ function draw() {
 }
 
 function drawGameUI() {
+  //draws the user interface
   background(34, 139, 34);
   
   drawDealerHand();
@@ -103,12 +114,16 @@ function drawGameUI() {
 }
 
 function drawDealerHand() {
+  //draws the dealer's hand and information
+
   let x = width/2 - scaleFactor.cardSize*CARD_WIDTH_MODIFIER;
   let y = scaleFactor.cardSize;
   let score = '';
   if (gameState.dealerPlay){
     score = `: ${calculateHandValue(gameState.dealerHand)}`;
   }
+
+  //draws the dealers cards and hand total
   fill(255);
   textSize(myTextSize);
   textAlign(CENTER, TOP);
@@ -117,6 +132,9 @@ function drawDealerHand() {
 }
 
 function drawPlayerHands() {
+  //draws each of the active players' hands
+
+  //for all the players connected, draw their hands if they were dealt cards
   for (let i = 0; i < guests.length; i++) {
     let player = guests[i];
     let seat = player.seat;
@@ -126,17 +144,22 @@ function drawPlayerHands() {
       let y = height - scaleFactor.cardSize*2;
       let amountOfHands = player.hands.length;
 
+      //show where the player's seat is
       fill(255);
-      textAlign(LEFT, TOP);
-      text(`Player ${seat+1}`, x, y + scaleFactor.cardSize);
+      textAlign(CENTER, TOP);
+      text(`Player ${seat+1}`, x + scaleFactor.cardSize/2, y + scaleFactor.cardSize);
 
+      //draw each hand that the player has
       for (let j = 0; j < amountOfHands; j++){
         let handAreaWidth = playAreaWidth/amountOfHands;
         let handX = x - playAreaWidth/2 + handAreaWidth * j + handAreaWidth/2;
+
+        //determine if the player doubled down on the hand
         let isDoubled = false;
         if (player.bets[j] === 2*player.originalBet){
           isDoubled = true;
         }
+
         drawStackedCards(player.hands[j], handX, y, isDoubled);
         drawHandInfo(player, j, handX + scaleFactor.cardSize/2, y + scaleFactor.cardSize + myTextSize);
       }
@@ -145,15 +168,23 @@ function drawPlayerHands() {
 }
 
 function drawHandInfo(player, handIndex, x, y){
+  //writes the information associated with the hand
+
+  //determine if the hand is the current hand that is being played
   let activeHand = '';
   if (player.currentHand === handIndex && isMyTurn(player)){
     activeHand = 'ACTIVE';
   }
+
+  //write the hand total, bet, result, and if the hand is the active hand
   textAlign(CENTER,TOP);
   text(`${calculateHandValue(player.hands[handIndex])} \nBet: $${player.bets[handIndex]} \nResult: ${player.results[handIndex]} \n${activeHand}`, x, y);
 }
 
 function drawStackedCards(hand, x, y, isDoubled){
+  //draws the cards in a hand stacked on top of each other. This is used for the players' hands
+
+  //draw each card in the hand
   for (let i = 0; i < hand.length; i++){
     let offset = i*scaleFactor.cardSize/4;
     let cardKey = `${hand[i].suit}-${hand[i].value}`;
@@ -174,6 +205,8 @@ function drawStackedCards(hand, x, y, isDoubled){
 
 function drawCards(hand, x, y) {
   //draw the cards in a hand side-by-side. This is used for the dealer's cards
+
+  //draw each card in the hand
   for (let i = 0; i < hand.length; i++) {
     let cardKey = `${hand[i].suit}-${hand[i].value}`;
     let card = cards[cardKey];
@@ -188,8 +221,9 @@ function drawCards(hand, x, y) {
 
 function drawButtons() {
   //draw the buttons for each action the player can take
+
   let buttonY = height/2;
-  let buttonX = width/5;
+  let buttonX = width/5; //4 buttons so divide screen into 5 parts
   let buttonWidth = BUTTON_WIDTH * scaleFactor.min;
   let buttonHeight = BUTTON_HEIGHT * scaleFactor.min;
   drawButton(buttonX*1 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Hit", hit);
@@ -197,33 +231,45 @@ function drawButtons() {
   drawButton(buttonX*3 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
   drawButton(buttonX*4 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
 
+  //draw a button to find a seat if the player has not sat down yet
   if (my.seat === -1){
     drawButton(width/2 - buttonWidth/2, buttonY + buttonHeight, buttonWidth, buttonHeight, "Find Seat", findSeat);
   }
 }
 
+
 function drawBettingInfo() {
+  //draws the player's information such as their seat, wager, and bankroll
+
+  let timer = ceil((lastPlayerAction-millis()+playerActionTime)/1000); //time until player is forced to stand
+
   fill(255);
   textSize(myTextSize);
   textAlign(LEFT, TOP);
-  text(`Player ${my.seat+1} \nWager: $${my.wager} \nMoney: $${my.money}`, 20, 20);
+  text(`Player ${my.seat+1} \nWager: $${my.wager} \nMoney: $${my.money} \n\nBlackjack pays 3:2 \nDealer must stand on 17 and must draw to 16 \nUse scroll wheel to change wager \n\nClock: ${timer}`, 20, 20);
 }
 
 function drawResults(){
-  if (!gameState.dealerPlay){
+  //displays if the player won or lost money on the hand
+
+  //stop if the dealer has not played their turn yet or the player isn't at the table
+  if (!gameState.dealerPlay || !isUserAtTable(my)){
     return;
   }
+
   fill('white');
   textAlign(CENTER, CENTER);
   textSize(myTextSize);
   let handResult;
   let dealerBlackjack = '';
 
+  //calculate how much the player bet in total
   let sum = 0;
   for (let bet of my.bets){
     sum += bet;
   }
   
+  //determine if the player won any money back and if the dealer had blackjack
   if (my.lastWin === sum){
     handResult = "Push!";
   }
@@ -236,6 +282,8 @@ function drawResults(){
   if (calculateHandValue(gameState.dealerHand) === 21 && gameState.dealerHand.length === 2){
     dealerBlackjack = "Dealer Blackjack";
   }
+
+  
   let timer = ceil((gameState.lastReset-gameState.timer+gameState.resetTime)/1000); //time until the board resets
 
   text(`${dealerBlackjack} \n${handResult} \n${timer}`, width/2, height/2 - BUTTON_HEIGHT*scaleFactor.min);
@@ -243,21 +291,21 @@ function drawResults(){
 
 
 function drawButton(x, y, w, h, label, action) {
+  //draws a button which runs a function when pressed
+
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
 
-  //button style
-  fill(isHovered ? "red" : "green"); // Change color when hovered
+  fill(isHovered ? "red" : "green"); //change colour when hovered
   stroke(0);
   strokeWeight(2);
   rect(x, y, w, h, 10);
 
-  //text style
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(myTextSize);
   text(label, x + w/2, y + h/2);
 
-  //when the button is clicked
+  //when the button is clicked reset the action timer and run the button's function
   if (isHovered && mouseIsPressed && clickReleased) {
     lastPlayerAction = millis();
     action();
@@ -266,11 +314,13 @@ function drawButton(x, y, w, h, label, action) {
 }
 
 function mouseReleased(){
+  //when mouse click is released allow buttons to be pressed again
   clickReleased = true;
 }
 
 function findSeat(){
-  //find an empty seat at the table. filling from lowest to highest
+  //finds an empty seat at the table. filling from lowest to highest
+
   for (let i = 0; i < TABLE_SIZE; i++){
     if (!isSeatTaken(i)){
       my.seat = i;
@@ -280,7 +330,8 @@ function findSeat(){
 }
 
 function isSeatTaken(seat){
-  //check if a given seat at the table is taken
+  //checks if a given seat at the table is taken
+
   for (let player of guests){
     if (int(player.seat) === seat){
       return true;
@@ -290,12 +341,12 @@ function isSeatTaken(seat){
 }
 
 function isUserAtTable(player){
-  //check if the user is sitting at the table and should be dealt cards
+  //checks if the user is sitting at the table and should be dealt cards
   return player.seat >= 0;
 }
 
 function isUserPlaying(player){
-  //check if the user has cards in their hand
+  //checks if the user has cards in their hand
   return player.hasOwnProperty('hand');
 }
 
@@ -309,16 +360,8 @@ function currentPlayer(){
   return {};
 }
 
-function hostChangesTurn(){
-  for (let player of guests){
-    if (player.advanceTurn === true){
-      gameState.currentTurn++;
-      player.advanceTurn = false;
-    }
-  }
-}
-
 function hostChecksBlackjack(){
+  //the host checks if any players' hands are blackjack and ends their turn if so
   for (let player of guests){
     if (player.checkBlackjack === true && currentPlayer() === player){
       checkBlackjack();
@@ -328,14 +371,16 @@ function hostChecksBlackjack(){
 }
 
 function gameLogic(){
+  //functions for the host to run every frame
+
   resetBoard();
-  // hostChangesTurn();
   hostChecksBlackjack();
   gameState.timer = millis();
 }
 
 function setupGame(){
   //setup the shared gameState object and the deck
+
   let deck = shuffleDeck(createDeck());
   partySetShared(gameState, {
     deck,
@@ -352,6 +397,8 @@ function setupGame(){
 
 function resetBoard(){
   //reset the cards and bets of each player and the dealer
+
+  //if the dealer has played and 5 seconds have passed
   if (gameState.timer - gameState.lastReset > gameState.resetTime && gameState.dealerPlay){
     gameState.lastReset = gameState.timer;
     for (let player of guests){
@@ -359,7 +406,6 @@ function resetBoard(){
       player.results = ['none'];
       player.hands = [];
       player.currentHand = 0;
-      player.advanceTurn = false;
       delete player.hand;
     }
     gameState.roundDone = false;
@@ -373,6 +419,8 @@ function resetBoard(){
 }
 
 function updateMoney(){
+  //updates the player money to be in line with how much they bet in the current round
+
   if (!gameState.dealerPlay){
     my.money = my.originalMoney;
     let sum = my.originalMoney;
@@ -384,7 +432,7 @@ function updateMoney(){
 }
 
 function createDeck(){
-  //create an array of objects for each card in a standard deck
+  //creates an array of objects for each card in a standard deck
   let deck = [];
 
   //create a deck consisting of as many 52-card decks as specified by the shoe size
@@ -399,7 +447,7 @@ function createDeck(){
 }
 
 function shuffleDeck(deck){
-  //randomize the order of the objects in the deck array
+  //randomizes the order of the objects in the deck array
   for (let i = deck.length - 1; i > 0; i--){
     let j = floor(random(i+1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -421,9 +469,12 @@ function drawCard(){
 
 function dealCards(){
   //deal the initial two cards to every player and the dealer
+
+  //stop if the cards have already been dealt
   if (gameState.hasOwnProperty('dealt')){
     return;
   }
+
   for (let player of guests){
     player.originalMoney = player.money;
 
@@ -432,20 +483,23 @@ function dealCards(){
       player.money = 50;
       player.originalMoney = 50;
     }
+
+    //if the player is at the table and placed a valid bet, deal them cards
     if (isUserAtTable(player) && player.wager > 0 && player.wager <= player.money){
       player.bets[0] = player.wager;
       player.originalBet = player.wager;
       player.hand = [drawCard(), drawCard()];
       player.hands.push(player.hand);
-      player.checkBlackjack = true;
+      player.checkBlackjack = true; //mark the hand to be checked for a blackjack
     }
   }
-  gameState.dealerHand = [drawCard(), drawCard()];
-  gameState.dealt = true;
+
+  gameState.dealerHand = [drawCard(), drawCard()]; //give cards to the dealer
+  gameState.dealt = true; //mark the round as having been dealt
 }
 
 function checkBlackjack(){
-  //check if any of the players or the dealer got blackjack
+  //checks if any of the players or the dealer got blackjack
 
   //check for player blackjacks
   for (let player of guests){
@@ -464,7 +518,8 @@ function checkBlackjack(){
 }
 
 function checkDealerTurn(){
-  //check if all players have completed their actions and it is now the dealer's turn
+  //checks if all players have completed their actions and it is now the dealer's turn
+
   if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
     skipEmptySeats();
   }
@@ -475,12 +530,11 @@ function checkDealerTurn(){
 }
 
 function skipEmptySeats(){
-  //pass over any empty seats until the next occupied seat is reached
+  //passes over any empty seats until the next occupied seat is reached
+
   for (let i = 0; i < TABLE_SIZE; i++){
     if (!isUserPlaying(currentPlayer()) && !gameState.roundDone){
-      my.advanceTurn = true;
       gameState.currentTurn++;
-      // hostChangesTurn();
     }
     else{
       return;
@@ -505,50 +559,66 @@ function playNextHand(){
 }
 
 function skipBlackjackHands(player){
+  //passes over any of the player's hands that have blackjack
+
   while (player.results[player.currentHand] === 'blackjack'){
+    //move to the player's next hand
     player.currentHand++;
     if (player.currentHand < player.hands.length){
       player.hand = [...player.hands[player.currentHand]];
     }
   }
+  
+  //go to the next player's turn if the player is out of hands
   if (player.currentHand >= player.hands.length && isMyTurn(player)){
-    my.advanceTurn = true;
     gameState.currentTurn++;
   }
 }
 
 function hit(){
   //the player draws another card
+
+  //stop if it not the player's turn
   if (!isMyTurn(my) || my.results[my.currentHand] === 'bust'){
     return;
   }
+
+  //draw a card and check if it results in a bust
   my.hand.push(drawCard());
   checkBust(my.hand);
 }
 
 function stand(){
   //the player ends their turn
+
+  //stop if it is not the player's turn
   if (!isMyTurn(my)){
     return;
   }
+
+  //move to the player's next hand or to the next player
   if (my.hands.length-1 > my.currentHand){
     playNextHand();
   }
   else{
-    my.advanceTurn = true;
     gameState.currentTurn++;
   }
 }
 
 function doubleDown(){
   //the player doubles down by doubling their bet and drawing a single extra card
+
+  //stop if it is not the player's turn or they have already drawn a card or they cannot afford to double down
   if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
     return;
   }
+
+  //double the bet and draw a new card
   my.bets[my.currentHand] *= 2;
   my.hand.push(drawCard());
   my.hands[my.currentHand] = [...my.hand];
 
+  //check if the hand busted and stand if not
   let thisHand = my.currentHand;
   checkBust(my.hand);
   if (my.results[thisHand] !== 'bust'){
@@ -558,32 +628,36 @@ function doubleDown(){
 
 function splitCards(){
   //the player splits their hand into two seperate hands by matching their original bet. only possible when dealt two cards of the same value
+
+  //stop if it is not the player's turn or they have already drawn a card or they cannot afford to split
   if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
     return;
   }
+
+  //stop if the player's cards are not the same value
   let [card1, card2] = my.hand;
   if (card1.value !== card2.value) {
     return;
   }
+
   //duplicate the original bet and seperate cards into two and deal each new hand an additional card
   my.bets.push(my.originalBet);
   my.results.push('none');
   my.hands[my.currentHand] = [card1, drawCard()];
   my.hands.splice(my.currentHand, 0, [card2, drawCard()]);
-
   my.hand = [...my.hands[my.currentHand]];
-  my.checkBlackjack = true;
+  my.checkBlackjack = true; //mark the player to be checked for blackjacks
 }
 
 function bust(){
   //the player has gone over 21
   my.results[my.currentHand] = 'bust';
 
+  //move to the player's next hand or to the next player
   if (my.hands.length-1 > my.currentHand){
     playNextHand();
   }
   else{
-    my.advanceTurn = true;
     gameState.currentTurn++;
   }
 }
@@ -596,7 +670,7 @@ function checkBust(hand){
 }
 
 function calculateHandValue(hand){
-  //find the value of the hand
+  //finds the value of the hand
   let sum = 0;
   let aces = 0;
   
@@ -635,7 +709,8 @@ function dealerPlay(){
 }
 
 function determineWinners(){
-  //deterime the outcome of each player's hand
+  //deterimes the outcome of each player's hand
+
   let dealerScore = calculateHandValue(gameState.dealerHand);
   for (let player of guests){
     for (player.currentHand = 0; player.currentHand < player.hands.length; player.currentHand++){
@@ -660,12 +735,15 @@ function determineWinners(){
     }
     player.currentHand = 0;
   }
+
   payoutWins();
-  gameState.lastReset = gameState.timer;
-  gameState.reset = true;
+  gameState.lastReset = gameState.timer; //start the timer for the reset
+  gameState.reset = true; //mark the board to be reset
 }
 
 function payoutWins(){
+  //pays players for each hand that they won
+
   for (let player of guests){
     player.lastWin = 0;
     for (let i = 0; i < player.bets.length; i++){
@@ -688,8 +766,8 @@ function payoutWins(){
 
 function mouseWheel(event){
   //change wager based on mouse scroll wheel
-  
   let increment = 50;
+
   //increase wager by 50 when scrolling up and decrease when scrolling down
   if (event.delta < 0){
     my.wager += increment;
