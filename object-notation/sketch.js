@@ -298,7 +298,7 @@ function drawButton(x, y, w, h, label, action){
 
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
 
-  fill(isHovered ? "red" : "green"); //change colour when hovered
+  fill(isHovered ? color(141, 153, 174) : color(237, 242, 244)); //change colour when hovered
   stroke(0);
   strokeWeight(2);
   rect(x, y, w, h, 10);
