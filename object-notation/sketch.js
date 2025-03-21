@@ -4,6 +4,7 @@
 //
 // Extra for Experts:
 // This project incorporates p5 party
+// It appears that some issues occur when multiple people are connected from several devices although it does work as intended when multiple instances are open on the same device
 
 //scale factor to quickly modify the sizes of parts of the game based on the window size
 let scaleFactor ={
