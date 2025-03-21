@@ -13,7 +13,7 @@ let scaleFactor ={
   y: 1,
 };
 
-//inialize variables and constants
+//initialize variables and constants
 let playerActionTime = 30000; //players have 30s to act
 let lastPlayerAction = 0;
 let hasClockReset = false;
@@ -24,7 +24,6 @@ let cards = {};
 let clickReleased = true;
 let guests;
 let my;
-let myHand = [];
 let gameState;
 const CARD_SIZE = 100; //the image files of the cards are 64x64 pixels
 const CARD_WIDTH_MODIFIER = 0.625; //the card images only have a width of ~0.625x their height
@@ -65,36 +64,37 @@ function setup(){
 }
 
 function draw(){
-
-
   //only the host runs the logic of the game
   if(partyIsHost()){
     gameLogic();
   }
 
+  //draw UI and update action clock
   if (gameState.gameStarted){
-    //draw the user interaface for the game
     drawGameUI();
-
-    //force player to stand after 30s of no action
-    if (!isMyTurn(my) || !gameState.dealt){
-      lastPlayerAction = millis();
-      hasClockReset = false;
-    }
-    else if (!hasClockReset){
-      lastPlayerAction = millis();
-      hasClockReset = true;
-    }
-    else if (millis() - lastPlayerAction > playerActionTime){
-      lastPlayerAction = millis();
-      stand();
-    }
+    actionClock();
   }
 
   //keep hands and money properly in sync
   if (gameState.dealt){
     updateMoney();
     updateHands();
+  }
+}
+
+function actionClock(){
+  //forces player to stand after 30s of no action
+  if (!isMyTurn(my) || !gameState.dealt){
+    lastPlayerAction = millis();
+    hasClockReset = false;
+  }
+  else if (!hasClockReset){
+    lastPlayerAction = millis();
+    hasClockReset = true;
+  }
+  else if (millis() - lastPlayerAction > playerActionTime){
+    lastPlayerAction = millis();
+    stand();
   }
 }
 
