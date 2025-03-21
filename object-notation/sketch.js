@@ -33,7 +33,7 @@ const SHOE_SIZE = 6; //amount of decks used in the shoe
 const BUTTON_WIDTH = 100;
 const BUTTON_HEIGHT = 40;
 
-function preload() {
+function preload(){
   //preload card images
   for (let suit of suits){
     for (let value of values){
@@ -53,7 +53,7 @@ function preload() {
   guests = partyLoadGuestShareds();
 }
 
-function setup() {
+function setup(){
   createCanvas(800, 800);
   windowResized();
   partyToggleInfo(false);
@@ -64,8 +64,8 @@ function setup() {
   }
 }
 
-function draw() {
-  background(220);
+function draw(){
+
 
   //only the host runs the logic of the game
   if(partyIsHost()){
@@ -75,11 +75,6 @@ function draw() {
   if (gameState.gameStarted){
     //draw the user interaface for the game
     drawGameUI();
-
-    // //check if the it's the dealer's turn after passing your own turn
-    // if (my.seat === gameState.currentTurn-1){
-    //   checkDealerTurn();
-    // }
 
     //force player to stand after 30s of no action
     if (!isMyTurn(my) || !gameState.dealt){
@@ -103,7 +98,7 @@ function draw() {
   }
 }
 
-function drawGameUI() {
+function drawGameUI(){
   //draws the user interface
   background(34, 139, 34);
   
@@ -114,7 +109,7 @@ function drawGameUI() {
   drawResults();
 }
 
-function drawDealerHand() {
+function drawDealerHand(){
   //draws the dealer's hand and information
 
   let x = width/2 - scaleFactor.cardSize*CARD_WIDTH_MODIFIER;
@@ -132,14 +127,14 @@ function drawDealerHand() {
   drawCards(gameState.dealerHand, x, y);
 }
 
-function drawPlayerHands() {
+function drawPlayerHands(){
   //draws each of the active players' hands
 
   //for all the players connected, draw their hands if they were dealt cards
-  for (let i = 0; i < guests.length; i++) {
+  for (let i = 0; i < guests.length; i++){
     let player = guests[i];
     let seat = player.seat;
-    if (isUserAtTable(player) && isUserPlaying(player)) {
+    if (isUserAtTable(player) && isUserPlaying(player)){
       let playAreaWidth = width/(TABLE_SIZE+1);
       let x = playAreaWidth * (seat + 1);
       let y = height - scaleFactor.cardSize*2;
@@ -204,11 +199,11 @@ function drawStackedCards(hand, x, y, isDoubled){
   }
 }
 
-function drawCards(hand, x, y) {
+function drawCards(hand, x, y){
   //draw the cards in a hand side-by-side. This is used for the dealer's cards
 
   //draw each card in the hand
-  for (let i = 0; i < hand.length; i++) {
+  for (let i = 0; i < hand.length; i++){
     let cardKey = `${hand[i].suit}-${hand[i].value}`;
     let card = cards[cardKey];
 
@@ -220,7 +215,7 @@ function drawCards(hand, x, y) {
   }
 }
 
-function drawButtons() {
+function drawButtons(){
   //draw the buttons for each action the player can take
 
   let buttonY = height/2;
@@ -242,7 +237,7 @@ function drawButtons() {
 }
 
 
-function drawBettingInfo() {
+function drawBettingInfo(){
   //writes the player's information such as their seat, wager, and bankroll
 
   let timer = ceil((lastPlayerAction-millis()+playerActionTime)/1000); //time until player is forced to stand
@@ -298,7 +293,7 @@ function drawResults(){
 }
 
 
-function drawButton(x, y, w, h, label, action) {
+function drawButton(x, y, w, h, label, action){
   //draws a button which runs a function when pressed
 
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
@@ -314,7 +309,7 @@ function drawButton(x, y, w, h, label, action) {
   text(label, x + w/2, y + h/2);
 
   //when the button is clicked reset the action timer and run the button's function
-  if (isHovered && mouseIsPressed && clickReleased) {
+  if (isHovered && mouseIsPressed && clickReleased){
     lastPlayerAction = millis();
     action();
     clickReleased = false;
@@ -632,7 +627,7 @@ function doubleDown(){
   //the player doubles down by doubling their bet and drawing a single extra card
 
   //stop if it is not the player's turn or they have already drawn a card or they cannot afford to double down
-  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
+  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet){
     return;
   }
 
@@ -653,13 +648,13 @@ function splitCards(){
   //the player splits their hand into two seperate hands by matching their original bet. only possible when dealt two cards of the same value
 
   //stop if it is not the player's turn or they have already drawn a card or they cannot afford to split
-  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet) {
+  if (!isMyTurn(my) || my.hand.length !== 2 || my.money < my.originalBet){
     return;
   }
 
   //stop if the player's cards are not the same value
   let [card1, card2] = my.hand;
-  if (card1.value !== card2.value) {
+  if (card1.value !== card2.value){
     return;
   }
 
@@ -687,7 +682,7 @@ function bust(){
 
 function checkBust(hand){
   //check if the given hand has busted by going over 21
-  if (calculateHandValue(hand) > 21) {
+  if (calculateHandValue(hand) > 21){
     bust();
   }
 }
@@ -706,7 +701,7 @@ function calculateHandValue(hand){
     else if(['K','Q','J'].includes(card.value)){
       sum += 10;
     }
-    else {
+    else{
       sum += int(card.value);
     }
   }
@@ -812,7 +807,7 @@ function isMyTurn(player){
   return gameState.currentTurn === player.seat;
 }
 
-function windowResized() {
+function windowResized(){
   //when the size of the window is changed
   resizeCanvas(windowWidth, windowHeight);
   
