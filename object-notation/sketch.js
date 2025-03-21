@@ -76,10 +76,10 @@ function draw() {
     //draw the user interaface for the game
     drawGameUI();
 
-    //check if the it's the dealer's turn after passing your own turn
-    if (my.seat === gameState.currentTurn-1){
-      checkDealerTurn();
-    }
+    // //check if the it's the dealer's turn after passing your own turn
+    // if (my.seat === gameState.currentTurn-1){
+    //   checkDealerTurn();
+    // }
 
     //force player to stand after 30s of no action
     if (!isMyTurn(my) || !gameState.dealt){
@@ -227,34 +227,41 @@ function drawButtons() {
   let buttonX = width/5; //4 buttons so divide screen into 5 parts
   let buttonWidth = BUTTON_WIDTH * scaleFactor.min;
   let buttonHeight = BUTTON_HEIGHT * scaleFactor.min;
-  drawButton(buttonX*1 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Hit", hit);
-  drawButton(buttonX*2 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Stand", stand);
-  drawButton(buttonX*3 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
-  drawButton(buttonX*4 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
 
-  //draw a button to find a seat if the player has not sat down yet
-  if (my.seat === -1){
-    drawButton(width/2 - buttonWidth/2, buttonY + buttonHeight, buttonWidth, buttonHeight, "Find Seat", findSeat);
+  //draw the buttons for each action if the player is seated at the table
+  if (my.seat >= 0){
+    drawButton(buttonX*1 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Hit", hit);
+    drawButton(buttonX*2 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Stand", stand);
+    drawButton(buttonX*3 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Double", doubleDown);
+    drawButton(buttonX*4 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Split", splitCards);
+  }
+  //only draw the button to find a seat when the player is not seated
+  else{
+    drawButton(width/2 - buttonWidth/2, buttonY, buttonWidth, buttonHeight, "Find Seat", findSeat);
   }
 }
 
 
 function drawBettingInfo() {
-  //draws the player's information such as their seat, wager, and bankroll
+  //writes the player's information such as their seat, wager, and bankroll
 
   let timer = ceil((lastPlayerAction-millis()+playerActionTime)/1000); //time until player is forced to stand
+  let isHost = '';
+  if (partyIsHost()){
+    isHost = 'You are the host please keep tab active';
+  }
 
   fill(255);
   textSize(myTextSize);
   textAlign(LEFT, TOP);
-  text(`Player ${my.seat+1} \nWager: $${my.wager} \nMoney: $${my.money} \n\nBlackjack pays 3:2 \nDealer must stand on 17 and must draw to 16 \nUse scroll wheel to change wager \n\nClock: ${timer}`, 20, 20);
+  text(`Player ${my.seat+1} \nWager: $${my.wager} \nMoney: $${my.money} \n\nBlackjack pays 3:2 \nDealer must stand on 17 and must draw to 16 \nUse scroll wheel to change wager \n\nClock: ${timer} \n\n${isHost}`, 20, 20);
 }
 
 function drawResults(){
   //displays if the player won or lost money on the hand
 
   //stop if the dealer has not played their turn yet or the player isn't at the table
-  if (!gameState.dealerPlay || !isUserAtTable(my)){
+  if (!gameState.roundDone || !isUserAtTable(my)){
     return;
   }
 
@@ -272,7 +279,7 @@ function drawResults(){
   
   //determine if the player won any money back and if the dealer had blackjack
   if (my.lastWin === sum){
-    handResult = "Push!";
+    handResult = "Break Even";
   }
   else if (my.lastWin === 0){
     handResult = `You Lost`;
@@ -371,12 +378,25 @@ function hostChecksBlackjack(){
   }
 }
 
+function hostChecksDealerTurn(){
+  //the host checks if it is the dealer's turn to play
+  if (!isUserPlaying(currentPlayer()) && !gameState.dealerPlay){
+    gameState.lastCard = gameState.timer;
+    checkDealerTurn();
+  }
+
+  if (gameState.dealerPlay && !gameState.roundDone){
+    dealerPlay();
+  }
+}
+
 function gameLogic(){
   //functions for the host to run every frame
-
+  
+  gameState.timer = millis();
   resetBoard();
   hostChecksBlackjack();
-  gameState.timer = millis();
+  hostChecksDealerTurn();
 }
 
 function setupGame(){
@@ -389,8 +409,10 @@ function setupGame(){
     currentTurn: 0,
     gameStarted: true,
     dealerPlay: false,
-    resetTime: 5000,
+    resetTime: 5000, //5 second timer 
     lastReset: 0,
+    cardTime: 500, //0.5 second timer
+    lastCard: 0,
     reset: false,
     timer: 0,
   });
@@ -400,7 +422,7 @@ function resetBoard(){
   //reset the cards and bets of each player and the dealer
 
   //if the dealer has played and 5 seconds have passed
-  if (gameState.timer - gameState.lastReset > gameState.resetTime && gameState.dealerPlay){
+  if (gameState.timer - gameState.lastReset > gameState.resetTime && gameState.roundDone){
     gameState.lastReset = gameState.timer;
     for (let player of guests){
       player.bets = [];
@@ -701,8 +723,12 @@ function dealerPlay(){
   //the dealer draws cards until it reaches 17
   if (!gameState.roundDone){
     gameState.dealerPlay = true;
-    while (calculateHandValue(gameState.dealerHand) < 17){
-      gameState.dealerHand.push(drawCard());
+    if (calculateHandValue(gameState.dealerHand) < 17){
+      if (gameState.timer - gameState.lastCard > gameState.cardTime){
+        gameState.lastCard = gameState.timer;
+        gameState.dealerHand.push(drawCard());
+      }
+      return;
     }
     gameState.roundDone = true;
     determineWinners();
