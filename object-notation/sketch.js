@@ -430,7 +430,6 @@ function resetBoard(){
     gameState.dealerHand = 0;
     gameState.dealerPlay = false;
     gameState.currentTurn = 0;
-    gameState.reset = false;
     delete gameState.dealt;
   }
   dealCards();
@@ -760,7 +759,6 @@ function determineWinners(){
 
   payoutWins();
   gameState.lastReset = gameState.timer; //start the timer for the reset
-  gameState.reset = true; //mark the board to be reset
 }
 
 function payoutWins(){
