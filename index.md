@@ -9,6 +9,7 @@
 - [Bubble Object Notation](bubbles)
 - [2D ArrayGrid](grid)
 - [Grid Neighbours](neighbours)
+- [Rectangle Grid](rectangle-grid)
 
 # CS30 Projects
 - [Interactive Scene](interactive-scene)
