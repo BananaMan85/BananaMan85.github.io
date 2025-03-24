@@ -7,6 +7,8 @@
 - [p5 Party Test](p5-party)
 - [Terrain Generation](terrain)
 - [Bubble Object Notation](bubbles)
+- [2D ArrayGrid](grid)
+- [Grid Neighbours](neighbours)
 
 # CS30 Projects
 - [Interactive Scene](interactive-scene)
