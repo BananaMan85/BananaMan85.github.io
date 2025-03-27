@@ -5,6 +5,7 @@
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
+//https://www.youtube.com/watch?v=TZfh8hpJIxo
 
 let world = [];
 
@@ -28,10 +29,27 @@ function generateEmptyWorld(width, height){
   return newGrid;
 }
 
-class Pawn {
+class Entity {
 
   constructor (x, y){
-    this.home = world[y][x];
     this.pos = world[y][x];
+  }
+}
+
+class Pawn extends Entity{
+
+  constructor (x, y){
+    super(x, y);
+    this.food = 0;
+
+  }
+}
+
+class Tree extends Entity{
+
+  constructor (x, y){
+    super(x, y);
+    this.pawns = 0;
+
   }
 }

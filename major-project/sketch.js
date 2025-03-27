@@ -152,6 +152,7 @@ class Rocket {
     push();
     translate(this.pos.x, this.pos.y);
     rotate(this.angle);
+    rotate(HALF_PI);
     fill(255, 0, 0);
     triangle(-10, 15, 10, 15, 0, -15);
     pop();
