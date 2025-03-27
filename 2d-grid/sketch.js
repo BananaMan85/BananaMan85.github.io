@@ -82,7 +82,18 @@ class Pawn extends Entity{
     if (!this.nextTree){
       let tree = entities.trees[floor(random(entities.trees.length))];
       while (tree.full){
-        tree = entities.trees[floor(random(entities.trees.length))];
+        let worldFull = true;
+        for (let tree of entities.trees){
+          if (!tree.full){
+            worldFull = false;
+          }
+        }
+        if (worldFull){
+          delete this;
+        }
+        else{
+          tree = entities.trees[floor(random(entities.trees.length))];
+        }
       }
       this.nextTree ??= tree;
     }
