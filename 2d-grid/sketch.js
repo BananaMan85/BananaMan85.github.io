@@ -5,6 +5,7 @@
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
+//inspiration:
 //https://www.youtube.com/watch?v=TZfh8hpJIxo
 
 let entities = {
@@ -24,8 +25,7 @@ function setup() {
     entities.trees.push(new Tree(i+1, i+1));
 
   }
-  for (let i = 0; i < 1; i++){
-
+  for (let i = 0; i < 10; i++){
     entities.pawns.push(new Pawn(0, 0));
   }
 }
@@ -50,7 +50,7 @@ function generateEmptyWorld(width, height){
   for (let y = 0; y < height; y++){
     newGrid.push([]);
     for (let x = 0; x < width; x++){
-      newGrid[y].push(0);
+      newGrid[y].push([]);
     }
   }
 
@@ -152,14 +152,14 @@ function drawWorld(){
       fill("white");
       rect(x*cellSize, y*cellSize, cellSize, cellSize);
 
-      if (world[y][x] === 'tree'){
-        fill("black")
+      if (world[y][x].includes('tree')){
+        fill("black");
         textAlign(CENTER,CENTER);
         textSize(cellSize/2);
         text('1', x*cellSize + cellSize/2, y*cellSize + cellSize/2);
       }
-      else if (world[y][x] === 'pawn'){
-        fill("black")
+      else if (world[y][x].includes('pawn')){
+        fill("black");
         textAlign(CENTER,CENTER);
         textSize(cellSize/2);
         text('2', x*cellSize + cellSize/2, y*cellSize + cellSize/2);
@@ -171,7 +171,7 @@ function drawWorld(){
 function updateWorld(){
   for (let y = 0; y < world.length; y++){
     for (let x = 0; x < world[y].length; x++){
-      world[y][x] = 0;
+      world[y][x] = [];
     }
   }
 
@@ -179,13 +179,13 @@ function updateWorld(){
     let x = pawn.x;
     let y = pawn.y;
 
-    world[y][x] = 'pawn';
+    world[y][x].push('pawn');
   }
 
   for (let tree of entities.trees){
     let x = tree.x;
     let y = tree.y;
 
-    world[y][x] = 'tree';
+    world[y][x].push('tree');
   }
 }
