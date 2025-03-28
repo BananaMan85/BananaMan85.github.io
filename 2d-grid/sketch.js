@@ -25,7 +25,7 @@ function setup() {
     entities.trees.push(new Tree(i+1, i+1));
 
   }
-  for (let i = 0; i < 10; i++){
+  for (let i = 0; i < 11; i++){
     entities.pawns.push(new Pawn(0, 0));
   }
 }
@@ -60,6 +60,8 @@ function generateEmptyWorld(width, height){
 class Entity {
 
   constructor (x, y){
+    this.homeX = x;
+    this.homeY = y;
     this.x = x;
     this.y = y;
   }
@@ -72,62 +74,84 @@ class Pawn extends Entity{
     this.food = 0;
     this.nextTree = null;
     this.atTree = false;
+    this.die = false;
 
   }
 
   findTree(){
-    if (this.nextTree && this.nextTree.full && !this.atTree){
-      this.nextTree = null;
+    if (this.die){
+      return;
     }
-    if (!this.nextTree){
-      let tree = entities.trees[floor(random(entities.trees.length))];
-      while (tree.full){
-        let worldFull = true;
-        for (let tree of entities.trees){
-          if (!tree.full){
-            worldFull = false;
-          }
-        }
-        if (worldFull){
-          delete this;
-          return;
-        }
-        else{
-          tree = entities.trees[floor(random(entities.trees.length))];
-        }
-      }
-      this.nextTree ??= tree;
+    let tree = null;
+    while (tree === null || tree.full){
+      tree = entities.trees[floor(random(entities.trees.length))];
     }
+    tree.pawns++;
+    this.nextTree = [tree.x, tree.y];
+
+    // if (this.nextTree !== null && this.nextTree.full && !this.atTree){
+    //   this.nextTree = null;
+    // }
+    // if (this.nextTree === null){
+    //   let tree = entities.trees[floor(random(entities.trees.length))];
+    //   while (tree.full){
+    //     let worldFull = true;
+    //     for (let tree of entities.trees){
+    //       if (!tree.full){
+    //         worldFull = false;
+    //       }
+    //     }
+    //     if (worldFull){
+    //       this.die = true;
+    //       return;
+    //     }
+    //     else{
+    //       tree = entities.trees[floor(random(entities.trees.length))];
+    //     }
+    //   }
+    //   this.nextTree ??= [tree.x, tree.y];
+    // }
   }
 
   move(){
-    if (this && !this.atTree){
-      let distX = this.nextTree.x - this.x;
-      let distY = this.nextTree.y - this.y;
-  
-      if (distX !== 0 || distY !== 0){
-        if (abs(distX) > abs(distY)){
-          if (distX > 0){
-            this.x += 1;
-          }
-          else{
-            this.x -= 1;
-          }
+    let distX;
+    let distY;
+
+    if (this.die){
+      distX = this.homeX - this.x;
+      distY = this.homeY - this.y;
+    }
+    else if (!this.atTree){
+      distX = this.nextTree[0] - this.x;
+      distY = this.nextTree[1] - this.y;
+    }
+    
+    if (distX === 0 && distY === 0){
+      if (!this.die){
+        this.atTree = true;
+        return;
+      }
+      else{
+        return;
+      }
+    }
+
+    if ((distX !== 0 || distY !== 0) && !this.atTree){
+      if (abs(distX) > abs(distY)){
+        if (distX > 0){
+          this.x += 1;
         }
         else{
-          if (distY > 0){
-            this.y += 1;
-          }
-          else{
-            this.y -= 1;
-          }
+          this.x -= 1;
         }
       }
-
-      distX = this.nextTree.x - this.x;
-      distY = this.nextTree.y - this.y;
-      if (distX === 0 && distY === 0){
-        this.atTree = true;
+      else{
+        if (distY > 0){
+          this.y += 1;
+        }
+        else{
+          this.y -= 1;
+        }
       }
     }
   }
@@ -143,12 +167,12 @@ class Tree extends Entity{
   }
 
   updatePawns(){
-    this.pawns = 0;
-    for (let pawn of entities.pawns){
-      if (pawn.x === this.x && pawn.y === this.y && pawn.nextTree.x === this.x && pawn.nextTree.y === this.y){
-        this.pawns++;
-      }
-    }
+    // this.pawns = 0;
+    // for (let pawn of entities.pawns){
+    //   if (pawn.nextTree !== null && pawn.x === this.x && pawn.y === this.y && pawn.nextTree[0] === this.x && pawn.nextTree[1] === this.y){
+    //     this.pawns++;
+    //   }
+    // }
     if (this.pawns >= 2){
       this.full = true;
     }
