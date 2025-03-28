@@ -90,6 +90,7 @@ class Pawn extends Entity{
         }
         if (worldFull){
           delete this;
+          return;
         }
         else{
           tree = entities.trees[floor(random(entities.trees.length))];
@@ -100,7 +101,7 @@ class Pawn extends Entity{
   }
 
   move(){
-    if (!this.atTree){
+    if (this && !this.atTree){
       let distX = this.nextTree.x - this.x;
       let distY = this.nextTree.y - this.y;
   

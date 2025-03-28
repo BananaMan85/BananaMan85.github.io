@@ -27,7 +27,7 @@ function preload(){
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(windowWidth*0.8, windowHeight*0.8);
 
   grid.width = ceil(width/CELL_SIZE);
   grid.height = ceil(height/CELL_SIZE);
