@@ -15,18 +15,36 @@ let entities = {
 let world = [];
 let treeCount = 5;
 let cellSize = 50;
+let pawnsInPlace = false;
+const DOVE = 0;
+const HAWK = 1;
 
 function setup() {
   createCanvas(800, 800);
+  
+  let gridWidth = width/cellSize;
+  let gridHeight = height/cellSize;
 
-  world = generateEmptyWorld(width/cellSize, height/cellSize);
+  world = generateEmptyWorld(gridWidth, gridHeight);
 
   for (let i = 0; i < treeCount; i++){
-    entities.trees.push(new Tree(i+1, i+1));
+    let treeX = floor(random(1, gridWidth - 1));
+    let treeY = floor(random(1, gridHeight - 1));
+    let isTaken = true;
+    while (isTaken){
+      isTaken = false;
+      for (let tree of entities.trees){
+        if (tree.x === treeX && tree.y === treeY){
+          isTaken = true;
+        }
+      }
+    }
+    entities.trees.push(new Tree(treeX, treeY));
 
   }
+
   for (let i = 0; i < 11; i++){
-    entities.pawns.push(new Pawn(0, 0));
+    entities.pawns.push(new Pawn(0, 0, DOVE));
   }
 }
 
@@ -37,7 +55,7 @@ function draw() {
   updateWorld();
 
   for (let pawn of entities.pawns){
-    pawn.findTree();
+    pawn.findDestination();
     pawn.move();
     for (let tree of entities.trees){
       tree.updatePawns();
@@ -69,48 +87,34 @@ class Entity {
 
 class Pawn extends Entity{
 
-  constructor (x, y){
+  constructor (x, y, strategy){
     super(x, y);
+    this.strategy = strategy;
     this.food = 0;
-    this.nextTree = null;
+    this.destination = [];
     this.atTree = false;
     this.die = false;
 
   }
 
-  findTree(){
-    if (this.die){
-      return;
+  findDestination(){
+    if (this.destination.length === 0 || this.die){
+      if (this.die){
+        this.destination = [this.homeX, this.homeY];
+        return;
+      }
+  
+      let tree = entities.trees[floor(random(entities.trees.length))];
+      while (tree.full){
+        if (isWorldFull()){
+          this.die = true;
+          return;
+        }
+        tree = entities.trees[floor(random(entities.trees.length))];
+      }
+      tree.pawns++;
+      this.destination = [tree.x, tree.y];
     }
-    let tree = null;
-    while (tree === null || tree.full){
-      tree = entities.trees[floor(random(entities.trees.length))];
-    }
-    tree.pawns++;
-    this.nextTree = [tree.x, tree.y];
-
-    // if (this.nextTree !== null && this.nextTree.full && !this.atTree){
-    //   this.nextTree = null;
-    // }
-    // if (this.nextTree === null){
-    //   let tree = entities.trees[floor(random(entities.trees.length))];
-    //   while (tree.full){
-    //     let worldFull = true;
-    //     for (let tree of entities.trees){
-    //       if (!tree.full){
-    //         worldFull = false;
-    //       }
-    //     }
-    //     if (worldFull){
-    //       this.die = true;
-    //       return;
-    //     }
-    //     else{
-    //       tree = entities.trees[floor(random(entities.trees.length))];
-    //     }
-    //   }
-    //   this.nextTree ??= [tree.x, tree.y];
-    // }
   }
 
   move(){
@@ -122,8 +126,8 @@ class Pawn extends Entity{
       distY = this.homeY - this.y;
     }
     else if (!this.atTree){
-      distX = this.nextTree[0] - this.x;
-      distY = this.nextTree[1] - this.y;
+      distX = this.destination[0] - this.x;
+      distY = this.destination[1] - this.y;
     }
     
     if (distX === 0 && distY === 0){
@@ -167,12 +171,6 @@ class Tree extends Entity{
   }
 
   updatePawns(){
-    // this.pawns = 0;
-    // for (let pawn of entities.pawns){
-    //   if (pawn.nextTree !== null && pawn.x === this.x && pawn.y === this.y && pawn.nextTree[0] === this.x && pawn.nextTree[1] === this.y){
-    //     this.pawns++;
-    //   }
-    // }
     if (this.pawns >= 2){
       this.full = true;
     }
@@ -223,5 +221,55 @@ function updateWorld(){
     let y = tree.y;
 
     world[y][x].push('tree');
+  }
+}
+
+function isWorldFull(){
+  for (let tree of entities.trees){
+    if (!tree.full){
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+function checkPawnsInPlace(){
+  for (let pawn of entities.pawns){
+    if (pawn.x !== pawn.destination[0] || pawn.y !== pawn.destination[1]){
+      pawnsInPlace = false;
+    }
+  }
+
+  pawnsInPlace = true;
+}
+
+function runLogic(){
+
+  for (let tree of entities.trees){
+    let pawnsindexes = [];
+
+    for (let pawn of entities.pawns){
+      let index = entities.pawns.indexOf(pawn);
+
+      //remove dead pawns
+      if (pawn.die){
+        entities.pawns.splice(index, 1);
+      }
+
+      //record which pawns are at this tree
+      else{
+        if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
+          pawnsindexes.push(index);
+        }
+      }
+    }
+
+    if (pawnsindexes.length === 1){
+      entities.pawns[pawnsindexes[0]].food = 2;
+    }
+    else if (pawnsindexes.length === 2){
+      let strategies = [entities.pawns[pawnsindexes[0]].strategy, entities.pawns[pawnsindexes[1]].strategy];
+    }
   }
 }
