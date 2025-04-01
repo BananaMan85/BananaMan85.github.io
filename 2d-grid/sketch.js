@@ -16,35 +16,28 @@ let world = [];
 let treeCount = 5;
 let cellSize = 50;
 let pawnsInPlace = false;
+let gridWidth, gridHeight;
 const DOVE = 0;
 const HAWK = 1;
+
+//results for each type of encounter
+let doveDove = 3;
+let doveHawk = 0.5;
+let hawkDove = 2.5;
+let hawkHawk = 0.5;
 
 function setup() {
   createCanvas(800, 800);
   
-  let gridWidth = width/cellSize;
-  let gridHeight = height/cellSize;
+  gridWidth = width/cellSize;
+  gridHeight = height/cellSize;
 
   world = generateEmptyWorld(gridWidth, gridHeight);
 
-  for (let i = 0; i < treeCount; i++){
-    let treeX = floor(random(1, gridWidth - 1));
-    let treeY = floor(random(1, gridHeight - 1));
-    let isTaken = true;
-    while (isTaken){
-      isTaken = false;
-      for (let tree of entities.trees){
-        if (tree.x === treeX && tree.y === treeY){
-          isTaken = true;
-        }
-      }
-    }
-    entities.trees.push(new Tree(treeX, treeY));
-
-  }
+  placeTrees();
 
   for (let i = 0; i < 11; i++){
-    entities.pawns.push(new Pawn(0, 0, DOVE));
+    createPawn(DOVE);
   }
 }
 
@@ -60,6 +53,61 @@ function draw() {
     for (let tree of entities.trees){
       tree.updatePawns();
     }
+  }
+}
+
+function createPawn(strategy){
+  let x;
+  let y;
+
+  //pick random corner
+  if (random() < 0.5){
+    x = 0;
+  }
+  else{
+    x = gridWidth-1;
+  }
+  if (random() < 0.5){
+    y = 0;
+  }
+  else{
+    y = gridHeight-1;
+  }
+
+  //move a random amount on a random axis
+  if (random() < 0.5){
+    x += floor(random(gridWidth));
+    x %= gridWidth;
+  }
+  else{
+    y += floor(random(gridHeight));
+    y %= gridHeight;
+  }
+
+  entities.pawns.push(new Pawn(x, y, strategy));
+}
+
+function placeTrees(){
+  for (let i = 0; i < treeCount; i++){
+    let treeX = floor(random(1, gridWidth - 1));
+    let treeY = floor(random(1, gridHeight - 1));
+    let isTaken = true;
+    while (isTaken){
+      isTaken = false;
+      for (let tree of entities.trees){
+        if (tree.x === treeX && tree.y === treeY){
+          isTaken = true;
+        }
+      }
+    }
+    entities.trees.push(new Tree(treeX, treeY));
+  }
+}
+
+function randomizePawnOrder(){
+  for (let i = entities.pawns.length - 1; i > 0; i--){
+    let j = floor(random(i+1));
+    [entities.pawns[i], entities.pawns[j]] = [entities.pawns[j], entities.pawns[i]];
   }
 }
 
@@ -246,22 +294,24 @@ function checkPawnsInPlace(){
 
 function runLogic(){
 
+  
+  //remove dead pawns
+  for (let pawn of entities.pawns){
+    if (pawn.die){
+      let index = entities.pawns.indexOf(pawn);
+      entities.pawns.splice(index, 1);
+    }
+  }
+
   for (let tree of entities.trees){
     let pawnsindexes = [];
 
     for (let pawn of entities.pawns){
       let index = entities.pawns.indexOf(pawn);
 
-      //remove dead pawns
-      if (pawn.die){
-        entities.pawns.splice(index, 1);
-      }
-
       //record which pawns are at this tree
-      else{
-        if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
-          pawnsindexes.push(index);
-        }
+      if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
+        pawnsindexes.push(index);
       }
     }
 
@@ -270,6 +320,28 @@ function runLogic(){
     }
     else if (pawnsindexes.length === 2){
       let strategies = [entities.pawns[pawnsindexes[0]].strategy, entities.pawns[pawnsindexes[1]].strategy];
+      for (let i = 0; i < 2; i++){
+        entities.pawns[pawnsindexes[i]].food = foodResult(strategies[i], strategies[-i+1]);
+      }
+    }
+  }
+}
+
+function foodResult(strat1, strat2){
+  if (strat1 === DOVE){
+    if (strat2 === DOVE){
+      return doveDove;
+    }
+    else if (strat2 === HAWK){
+      return doveHawk;
+    }
+  }
+  if (strat1 === HAWK){
+    if (strat2 === DOVE){
+      return hawkDove;
+    }
+    else if (strat2 === HAWK){
+      return hawkHawk;
     }
   }
 }
