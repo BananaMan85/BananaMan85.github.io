@@ -345,3 +345,29 @@ function foodResult(strat1, strat2){
     }
   }
 }
+
+function goHome(){
+  for (let pawn of entities.pawns){
+    pawn.destination = [pawn.homeX, pawn.homeY];
+  }
+}
+
+function newGeneration(){
+  for (let pawn of entities.pawns){
+    pawn.food-1;
+    if (pawn.food < 1){
+      if (random() > pawn.food*-1){
+        let index = entities.pawns.indexOf(pawn);
+        entities.pawns.splice(index, 1);
+      }
+    }
+    else{
+      for (i = 0; i < floor(pawn.food); i++){
+        createPawn(pawn.strategy);
+      }
+      if (random() < pawn.food - floor(pawn.food)){
+        createPawn(pawn.strategy);
+      }
+    }
+  }
+}
