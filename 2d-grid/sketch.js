@@ -1,4 +1,4 @@
-// 2d grid assignment
+// 2d grid assignment || Evolutionary Game Theory
 // William Sherwood
 // Date
 //
@@ -12,19 +12,27 @@ let entities = {
   trees: [],
   pawns: [],
 };
+let data = {
+  day: 0,
+  pawns: 0,
+  doves: 0,
+  hawks: 0,
+};
 let world = [];
-let treeCount = 5;
+let treeCount = 10;
 let cellSize = 50;
 let pawnsInPlace = false;
-let gridWidth, gridHeight;
+let foodGiven, foodUsed = false;
+let gridWidth, gridHeight; 
+let gameCycle = [findTrees, goHome, newGeneration];
+let gameState = 0;
 const DOVE = 0;
 const HAWK = 1;
 
 //results for each type of encounter
-let doveDove = 3;
-let doveHawk = 0.5;
-let hawkDove = 2.5;
-let hawkHawk = 0.5;
+//                      DOVE  HAWK
+let rewardMatrix = [[2, 1.75, 0.5], //DOVE
+                    [2, 1.5, 0.75]];//HAWK
 
 function setup() {
   createCanvas(800, 800);
@@ -36,8 +44,11 @@ function setup() {
 
   placeTrees();
 
-  for (let i = 0; i < 11; i++){
+  for (let i = 0; i < 2; i++){
     createPawn(DOVE);
+  }
+  for (let i = 0; i < 2; i++){
+    createPawn(HAWK);
   }
 }
 
@@ -46,12 +57,67 @@ function draw() {
 
   drawWorld();
   updateWorld();
+  updateData();
 
+  gameCycle[gameState]();
+}
+
+function keyPressed(){
+  if (key === ' '){
+    nextGameState();
+  }
+}
+
+function updateData(){
+  data.pawns = 0;
+  data.doves = 0;
+  data.hawks = 0;
+  for (let pawn of entities.pawns){
+    data.pawns++;
+    if (pawn.strategy === DOVE){
+      data.doves++;
+    }
+    else if (pawn.strategy === HAWK){
+      data.hawks++;
+    }
+  }
+
+  data.pDoves = data.doves/data.pawns;
+  data.pHawks = data.hawks/data.pawns;
+}
+
+function nextGameState(){
+  checkPawnsInPlace();
+  if (pawnsInPlace){
+    gameState++;
+
+    if (gameState >= gameCycle.length){
+      randomizePawnOrder();
+      data.day++;
+      gameState = 0;
+      foodGiven = false;
+      foodUsed = false;
+      for (let pawn of entities.pawns){
+        pawn.destination = [pawn.homeX, pawn.homeY];
+        pawn.atDestination = false;
+      }
+    }
+  }
+}
+
+function findTrees(){
   for (let pawn of entities.pawns){
     pawn.findDestination();
     pawn.move();
     for (let tree of entities.trees){
       tree.updatePawns();
+    }
+  }
+  
+  if (!foodGiven){
+    checkPawnsInPlace();
+    if (pawnsInPlace){
+      runLogic();
     }
   }
 }
@@ -74,7 +140,7 @@ function createPawn(strategy){
     y = gridHeight-1;
   }
 
-  //move a random amount on a random axis
+  //move a random amount on one random axis
   if (random() < 0.5){
     x += floor(random(gridWidth));
     x %= gridWidth;
@@ -138,15 +204,15 @@ class Pawn extends Entity{
   constructor (x, y, strategy){
     super(x, y);
     this.strategy = strategy;
-    this.food = 0;
-    this.destination = [];
-    this.atTree = false;
+    this.food = 1;
+    this.destination = [x, y];
+    this.atDestination = false;
     this.die = false;
 
   }
 
   findDestination(){
-    if (this.destination.length === 0 || this.die){
+    if ((this.destination[0] === this.homeX && this.destination[1] === this.homeY) || this.die){
       if (this.die){
         this.destination = [this.homeX, this.homeY];
         return;
@@ -170,17 +236,18 @@ class Pawn extends Entity{
     let distY;
 
     if (this.die){
-      distX = this.homeX - this.x;
-      distY = this.homeY - this.y;
+      //remove dead pawns
+      let index = entities.pawns.indexOf(this);
+      entities.pawns.splice(index, 1);
     }
-    else if (!this.atTree){
+    else if (!this.atDestination){
       distX = this.destination[0] - this.x;
       distY = this.destination[1] - this.y;
     }
     
     if (distX === 0 && distY === 0){
       if (!this.die){
-        this.atTree = true;
+        this.atDestination = true;
         return;
       }
       else{
@@ -188,7 +255,7 @@ class Pawn extends Entity{
       }
     }
 
-    if ((distX !== 0 || distY !== 0) && !this.atTree){
+    if ((distX !== 0 || distY !== 0) && !this.atDestination){
       if (abs(distX) > abs(distY)){
         if (distX > 0){
           this.x += 1;
@@ -286,6 +353,7 @@ function checkPawnsInPlace(){
   for (let pawn of entities.pawns){
     if (pawn.x !== pawn.destination[0] || pawn.y !== pawn.destination[1]){
       pawnsInPlace = false;
+      return;
     }
   }
 
@@ -293,15 +361,7 @@ function checkPawnsInPlace(){
 }
 
 function runLogic(){
-
-  
-  //remove dead pawns
-  for (let pawn of entities.pawns){
-    if (pawn.die){
-      let index = entities.pawns.indexOf(pawn);
-      entities.pawns.splice(index, 1);
-    }
-  }
+  foodGiven = true;
 
   for (let tree of entities.trees){
     let pawnsindexes = [];
@@ -316,58 +376,71 @@ function runLogic(){
     }
 
     if (pawnsindexes.length === 1){
-      entities.pawns[pawnsindexes[0]].food = 2;
+      entities.pawns[pawnsindexes[0]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][0];;
     }
     else if (pawnsindexes.length === 2){
-      let strategies = [entities.pawns[pawnsindexes[0]].strategy, entities.pawns[pawnsindexes[1]].strategy];
       for (let i = 0; i < 2; i++){
-        entities.pawns[pawnsindexes[i]].food = foodResult(strategies[i], strategies[-i+1]);
+        entities.pawns[pawnsindexes[i]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][entities.pawns[pawnsindexes[1]].strategy+1];;
       }
     }
   }
 }
 
 function foodResult(strat1, strat2){
-  if (strat1 === DOVE){
-    if (strat2 === DOVE){
-      return doveDove;
-    }
-    else if (strat2 === HAWK){
-      return doveHawk;
-    }
-  }
-  if (strat1 === HAWK){
-    if (strat2 === DOVE){
-      return hawkDove;
-    }
-    else if (strat2 === HAWK){
-      return hawkHawk;
-    }
-  }
+  // if (strat1 === DOVE){
+  //   if (strat2 === DOVE){
+  //     return doveDove;
+  //   }
+  //   else if (strat2 === HAWK){
+  //     return doveHawk;
+  //   }
+  // }
+  // if (strat1 === HAWK){
+  //   if (strat2 === DOVE){
+  //     return hawkDove;
+  //   }
+  //   else if (strat2 === HAWK){
+  //     return hawkHawk;
+  //   }
+  // }
+
+  return rewardMatrix[strat1][strat2+1];
 }
 
 function goHome(){
-  for (let pawn of entities.pawns){
-    pawn.destination = [pawn.homeX, pawn.homeY];
+  for (let tree of entities.trees){
+    tree.pawns = 0;
   }
+  for (let pawn of entities.pawns){
+    pawn.atDestination = false;
+    pawn.destination = [pawn.homeX, pawn.homeY];
+    pawn.move();
+  }
+  
 }
 
 function newGeneration(){
-  for (let pawn of entities.pawns){
-    pawn.food-1;
-    if (pawn.food < 1){
-      if (random() > pawn.food*-1){
-        let index = entities.pawns.indexOf(pawn);
-        entities.pawns.splice(index, 1);
+  if (!foodUsed){
+    for (let pawn of entities.pawns){
+      pawn.food -= 1;
+      if (pawn.food < 0){
+        if (random() < pawn.food*-1){
+          let index = entities.pawns.indexOf(pawn);
+          entities.pawns.splice(index, 1);
+        }
       }
+      else{
+        for (i = 0; i < floor(pawn.food); i++){
+          createPawn(pawn.strategy);
+        }
+        if (random() < pawn.food - floor(pawn.food)){
+          createPawn(pawn.strategy);
+        }
+      }
+
+      pawn.food = 0;
     }
-    else{
-      for (i = 0; i < floor(pawn.food); i++){
-        createPawn(pawn.strategy);
-      }
-      if (random() < pawn.food - floor(pawn.food)){
-        createPawn(pawn.strategy);
-      }
-    }
+
+    foodUsed = true;
   }
 }
