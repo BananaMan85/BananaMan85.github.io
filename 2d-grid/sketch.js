@@ -17,9 +17,16 @@ let data = {
   pawns: 0,
   doves: 0,
   hawks: 0,
+  pDoves: 0,
+  pHawks: 0,
+  history: {
+    doves: [],
+    hawks: [],
+  },
 };
 let world = [];
-let treeCount = 10;
+let treeCount = 100;
+let treeDensity = 1/4; //amount of the board that will be populated by trees
 let cellSize = 50;
 let pawnsInPlace = false;
 let foodGiven, foodUsed = false;
@@ -39,6 +46,8 @@ function setup() {
   
   gridWidth = width/cellSize;
   gridHeight = height/cellSize;
+
+  treeCount = floor((gridWidth-2) * (gridHeight-2) * (treeDensity));
 
   world = generateEmptyWorld(gridWidth, gridHeight);
 
@@ -68,6 +77,11 @@ function keyPressed(){
   }
 }
 
+function drawGraph(history){
+
+
+}
+
 function updateData(){
   data.pawns = 0;
   data.doves = 0;
@@ -92,7 +106,7 @@ function nextGameState(){
     gameState++;
 
     if (gameState >= gameCycle.length){
-      randomizePawnOrder();
+      entities.pawns = shuffleArray(entities.pawns);
       data.day++;
       gameState = 0;
       foodGiven = false;
@@ -154,27 +168,44 @@ function createPawn(strategy){
 }
 
 function placeTrees(){
-  for (let i = 0; i < treeCount; i++){
-    let treeX = floor(random(1, gridWidth - 1));
-    let treeY = floor(random(1, gridHeight - 1));
-    let isTaken = true;
-    while (isTaken){
-      isTaken = false;
-      for (let tree of entities.trees){
-        if (tree.x === treeX && tree.y === treeY){
-          isTaken = true;
-        }
-      }
+  // for (let i = 0; i < treeCount; i++){
+  //   let treeX = floor(random(1, gridWidth - 1));
+  //   let treeY = floor(random(1, gridHeight - 1));
+  //   let isTaken = true;
+  //   while (isTaken){
+  //     isTaken = false;
+  //     for (let tree of entities.trees){
+  //       if (tree.x === treeX && tree.y === treeY){
+  //         isTaken = true;
+  //       }
+  //     }
+  //   }
+  //   entities.trees.push(new Tree(treeX, treeY));
+  // }
+
+  let availablePositions = [];
+
+  for (let x = 1; x < gridWidth - 1; x++){
+    for (let y = 1; y < gridHeight - 1; y++){
+      availablePositions.push([x, y]);
     }
+  }
+
+  availablePositions = shuffleArray(availablePositions);
+
+  for (let i = 0; i < treeCount && i < availablePositions.length; i++){
+    let [treeX, treeY] = availablePositions[i];
     entities.trees.push(new Tree(treeX, treeY));
   }
 }
 
-function randomizePawnOrder(){
-  for (let i = entities.pawns.length - 1; i > 0; i--){
+function shuffleArray(array){
+  for (let i = array.length - 1; i > 0; i--){
     let j = floor(random(i+1));
-    [entities.pawns[i], entities.pawns[j]] = [entities.pawns[j], entities.pawns[i]];
+    [array[i], array[j]] = [array[j], array[i]];
   }
+
+  return array;
 }
 
 function generateEmptyWorld(width, height){
@@ -384,27 +415,6 @@ function runLogic(){
       }
     }
   }
-}
-
-function foodResult(strat1, strat2){
-  // if (strat1 === DOVE){
-  //   if (strat2 === DOVE){
-  //     return doveDove;
-  //   }
-  //   else if (strat2 === HAWK){
-  //     return doveHawk;
-  //   }
-  // }
-  // if (strat1 === HAWK){
-  //   if (strat2 === DOVE){
-  //     return hawkDove;
-  //   }
-  //   else if (strat2 === HAWK){
-  //     return hawkHawk;
-  //   }
-  // }
-
-  return rewardMatrix[strat1][strat2+1];
 }
 
 function goHome(){
