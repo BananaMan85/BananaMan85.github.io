@@ -196,14 +196,16 @@ function drawGraph(history){
   let bufferX = graphWidth/15;
   let bufferY = graphHeight/15;
 
-  graphWidth -= bufferX;
-  graphX += bufferX;
-  graphHeight -= bufferY;
-
   //draw graph background
   fill(240);
   stroke(0);
   rect(graphX, graphY, graphWidth, graphHeight);
+
+  graphWidth -= bufferX*2;
+  graphX += bufferX;
+  graphHeight -= bufferY*2;
+  graphY += bufferY
+
 
   let days = history.doves.length;
 
@@ -211,7 +213,7 @@ function drawGraph(history){
     let step = graphWidth / (days-1);
 
     //draw doves area
-    noStroke();
+    stroke(255, 255);
     fill(0, 0, 255);
     beginShape();
     vertex(graphX, graphY + graphHeight);
@@ -220,11 +222,11 @@ function drawGraph(history){
       let yDove = map(history.doves[i], 0, 1, graphY + graphHeight, graphY);
       vertex(x, yDove);
     }
-    vertex (graphX + days * step, graphY + graphHeight);
+    vertex (graphX + graphWidth, graphY + graphHeight);
     endShape(CLOSE);
 
     //draw hawks area
-    noStroke();
+    stroke(255, 255);
     fill(255, 0, 0);
     beginShape();
     vertex(graphX, graphY);
@@ -233,13 +235,29 @@ function drawGraph(history){
       let yHawk = map(history.hawks[i], 0, 1, graphY, graphY + graphHeight);
       vertex(x, yHawk);
     }
-    vertex (graphX + days * step, graphY);
+    vertex (graphX + graphWidth, graphY);
     endShape(CLOSE);
 
+    //draw markers for y-axis (amount of a certain strategy)
     for (let i = 1; i > 0; i -= 0.2){
+      let lineSize = graphHeight/400;
       fill('black');
       stroke(0, 255);
-      line(graphX, graphY + graphHeight - graphHeight*i, graphX + bufferX/2, graphY + graphHeight - graphHeight*i);
+      rect(graphX - bufferX/2, graphY + graphHeight - graphHeight*i - lineSize/2, bufferX, lineSize);
+      textAlign(RIGHT, CENTER);
+      textSize(lineSize*15);
+      text(round(i, 1), graphX - bufferX/2, graphY + graphHeight - graphHeight*i);
+    }
+
+    //draw markers for x-axis (days passed)
+    for (let i = 0; i < days; i++){
+      let lineSize = graphHeight/400;
+      fill('black');
+      stroke(0, 255);
+      rect(graphX + i * step - lineSize/2, graphY + graphHeight - bufferY/2, lineSize, bufferY);
+      textAlign(CENTER, TOP);
+      textSize(lineSize*15);
+      text(i, graphX + i * step, graphY + graphHeight + bufferY/2);
     }
   }
 
