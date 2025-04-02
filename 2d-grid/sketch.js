@@ -193,6 +193,12 @@ function drawGraph(history){
   let graphHeight = height/2;
   let graphX = width - graphWidth;
   let graphY = height - graphHeight;
+  let bufferX = graphWidth/30;
+  let bufferY = graphHeight/30;
+
+  graphWidth -= bufferX;
+  graphX += bufferX;
+  graphHeight -= bufferY;
 
   //draw graph background
   fill(240);
@@ -230,7 +236,11 @@ function drawGraph(history){
     vertex (graphX + days * step, graphY);
     endShape(CLOSE);
 
-    resetMatrix();
+    for (let i = 1; i > 0; i -= 0.2){
+      fill('black');
+      stroke(0, 255);
+      line(graphX - bufferX, graphY + graphHeight - graphHeight*i, graphX + bufferX, graphY + graphHeight - graphHeight*i);
+    }
   }
 
 }
@@ -463,28 +473,6 @@ function checkPawnsInPlace(){
 
 function runLogic(){
   foodGiven = true;
-
-  // for (let tree of entities.trees){
-  //   let pawnsindexes = [];
-
-  //   for (let pawn of entities.pawns){
-  //     let index = entities.pawns.indexOf(pawn);
-
-  //     //record which pawns are at this tree
-  //     if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
-  //       pawnsindexes.push(index);
-  //     }
-  //   }
-
-  //   if (pawnsindexes.length === 1){
-  //     entities.pawns[pawnsindexes[0]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][0];
-  //   }
-  //   else if (pawnsindexes.length === 2){
-  //     for (let i = 0; i < 2; i++){
-  //       entities.pawns[pawnsindexes[i]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][entities.pawns[pawnsindexes[1]].strategy+1];
-  //     }
-  //   }
-  // }
 
   for (let tree of entities.trees){
     let pawnsAtTree = entities.pawns.filter(pawn => 
