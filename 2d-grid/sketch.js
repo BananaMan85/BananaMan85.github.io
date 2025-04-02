@@ -43,23 +43,130 @@ const HAWK = 1;
 let rewardMatrix = [[2, 7/4, 2/4], //DOVE
                     [2, 6/4, 3/4]];//HAWK
 
+
+ 
+class Entity {
+
+  constructor (x, y){
+    this.homeX = x;
+    this.homeY = y;
+    this.x = x;
+    this.y = y;
+  }
+}
+
+class Pawn extends Entity{
+
+  constructor (x, y, strategy){
+    super(x, y);
+    this.strategy = strategy;
+    this.food = 1;
+    this.destination = [x, y];
+    this.atDestination = false;
+    this.die = false;
+
+  }
+
+  findDestination(){
+    if (this.destination[0] === this.homeX && this.destination[1] === this.homeY || this.die){
+      if (this.die){
+        this.destination = [this.homeX, this.homeY];
+        return;
+      }
+      if (availableTrees.length === 0){
+        this.die = true;
+        return;
+      }
+
+      let tree = availableTrees.pop();
+
+      tree.pawns++;
+      this.destination = [tree.x, tree.y];
+    }
+  }
+
+  move(){
+    let distX;
+    let distY;
+
+    if (this.die){
+      //remove dead pawns
+      let index = entities.pawns.indexOf(this);
+      entities.pawns.splice(index, 1);
+      return;
+    }
+    else{
+      distX = this.destination[0] - this.x;
+      distY = this.destination[1] - this.y;
+    }
+    
+    if (distX === 0 && distY === 0){
+      if (!this.die){
+        this.atDestination = true;
+        return;
+      }
+      else{
+        return;
+      }
+    }
+
+    if (distX !== 0 || distY !== 0){
+      if (abs(distX) > abs(distY)){
+        if (distX > 0){
+          this.x += 1;
+        }
+        else{
+          this.x -= 1;
+        }
+      }
+      else{
+        if (distY > 0){
+          this.y += 1;
+        }
+        else{
+          this.y -= 1;
+        }
+      }
+    }
+  }
+}
+
+class Tree extends Entity{
+
+  constructor (x, y){
+    super(x, y);
+    this.pawns = 0;
+    this.full = false;
+
+  }
+
+  updatePawns(){
+    if (this.pawns >= 2){
+      this.full = true;
+    }
+    else{
+      this.full = false;
+    }
+  }
+}
+
 function setup() {
-  createCanvas(1600, 900);
+  createCanvas(1200, 700);
   
   gridWidth = width/cellSize;
   gridHeight = height/2/cellSize;
 
-  treeCount = floor((gridWidth-2) * (gridHeight-2) * (treeDensity));
+  treeCount = floor((gridWidth-2) * (gridHeight-2) * treeDensity);
 
   world = generateEmptyWorld(gridWidth, gridHeight);
 
   placeTrees();
   fillAvailableTrees();
 
-  for (let i = 0; i < 4; i++){
+  for (let i = 0; i < 5; i++){
     entities.pawns.push(createPawn(DOVE));
   }
-  for (let i = 0; i < 20; i++){
+  for (let i = 0; i < 5; i++){
     entities.pawns.push(createPawn(HAWK));
   }
 }
@@ -100,14 +207,14 @@ function drawGraph(history){
     //draw doves area
     noStroke();
     fill(0, 0, 255);
-    beginShape()
+    beginShape();
     vertex(graphX, graphY + graphHeight);
     for (let i = 0; i < days; i++){
       let x  = graphX + i * step;
       let yDove = map(history.doves[i], 0, 1, graphY + graphHeight, graphY);
       vertex(x, yDove);
     }
-    vertex (graphX + (days) * step, graphY + graphHeight);
+    vertex (graphX + days * step, graphY + graphHeight);
     endShape(CLOSE);
 
     //draw hawks area
@@ -117,12 +224,13 @@ function drawGraph(history){
     vertex(graphX, graphY);
     for (let i = 0; i < days; i++){
       let x = graphX + i * step;
-      let yHawk = map(history.hawks[i], 0, 1, graphY, graphY + graphHeight)
+      let yHawk = map(history.hawks[i], 0, 1, graphY, graphY + graphHeight);
       vertex(x, yHawk);
     }
-    vertex (graphX + (days) * step, graphY);
+    vertex (graphX + days * step, graphY);
     endShape(CLOSE);
 
+    resetMatrix();
   }
 
 }
@@ -284,131 +392,27 @@ function generateEmptyWorld(width, height){
   return newGrid;
 }
 
-class Entity {
-
-  constructor (x, y){
-    this.homeX = x;
-    this.homeY = y;
-    this.x = x;
-    this.y = y;
-  }
-}
-
-class Pawn extends Entity{
-
-  constructor (x, y, strategy){
-    super(x, y);
-    this.strategy = strategy;
-    this.food = 1;
-    this.destination = [x, y];
-    this.atDestination = false;
-    this.die = false;
-
-  }
-
-  findDestination(){
-    if ((this.destination[0] === this.homeX && this.destination[1] === this.homeY) || this.die){
-      if (this.die){
-        this.destination = [this.homeX, this.homeY];
-        return;
-      }
-      if (availableTrees.length === 0){
-        this.die = true;
-        return;
-      }
-
-      let tree = availableTrees.pop();
-
-      tree.pawns++;
-      this.destination = [tree.x, tree.y];
-    }
-  }
-
-  move(){
-    let distX;
-    let distY;
-
-    if (this.die){
-      //remove dead pawns
-      let index = entities.pawns.indexOf(this);
-      entities.pawns.splice(index, 1);
-      return;
-    }
-    else{
-      distX = this.destination[0] - this.x;
-      distY = this.destination[1] - this.y;
-    }
-    
-    if (distX === 0 && distY === 0){
-      if (!this.die){
-        this.atDestination = true;
-        return;
-      }
-      else{
-        return;
-      }
-    }
-
-    if ((distX !== 0 || distY !== 0)){
-      if (abs(distX) > abs(distY)){
-        if (distX > 0){
-          this.x += 1;
-        }
-        else{
-          this.x -= 1;
-        }
-      }
-      else{
-        if (distY > 0){
-          this.y += 1;
-        }
-        else{
-          this.y -= 1;
-        }
-      }
-    }
-  }
-}
-
-class Tree extends Entity{
-
-  constructor (x, y){
-    super(x, y);
-    this.pawns = 0;
-    this.full = false;
-
-  }
-
-  updatePawns(){
-    if (this.pawns >= 2){
-      this.full = true;
-    }
-    else{
-      this.full = false;
-    }
-  }
-}
-
 function drawWorld(xOffset = 0, yOffset = 0){
   for (let y = 0; y < world.length; y++){
-    yCoord = y * cellSize
+    yCoord = y * cellSize;
     for (let x = 0; x < world[y].length; x++){
-      xCoord = x * cellSize
+      xCoord = x * cellSize;
 
       fill("white");
+      stroke(0, 255);
       rect(xCoord+xOffset, yCoord+yOffset, cellSize, cellSize);
 
       if (world[y][x].includes('tree')){
         fill("black");
         textAlign(CENTER,CENTER);
         textSize(cellSize/2);
-        text('1', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
+        text('T', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
       }
       else if (world[y][x].includes('pawn')){
         fill("black");
         textAlign(CENTER,CENTER);
         textSize(cellSize/2);
-        text('2', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
+        text('P', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
       }
     }
   }
@@ -460,25 +464,44 @@ function checkPawnsInPlace(){
 function runLogic(){
   foodGiven = true;
 
+  // for (let tree of entities.trees){
+  //   let pawnsindexes = [];
+
+  //   for (let pawn of entities.pawns){
+  //     let index = entities.pawns.indexOf(pawn);
+
+  //     //record which pawns are at this tree
+  //     if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
+  //       pawnsindexes.push(index);
+  //     }
+  //   }
+
+  //   if (pawnsindexes.length === 1){
+  //     entities.pawns[pawnsindexes[0]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][0];
+  //   }
+  //   else if (pawnsindexes.length === 2){
+  //     for (let i = 0; i < 2; i++){
+  //       entities.pawns[pawnsindexes[i]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][entities.pawns[pawnsindexes[1]].strategy+1];
+  //     }
+  //   }
+  // }
+
   for (let tree of entities.trees){
-    let pawnsindexes = [];
-
-    for (let pawn of entities.pawns){
-      let index = entities.pawns.indexOf(pawn);
-
-      //record which pawns are at this tree
-      if (pawn.destination[0] === tree.x && pawn.destination[1] === tree.y){
-        pawnsindexes.push(index);
-      }
+    let pawnsAtTree = entities.pawns.filter(pawn => 
+      pawn.destination[0] === tree.x && pawn.destination[1] === tree.y
+    );
+  
+    if (pawnsAtTree.length === 1){
+      let pawn = pawnsAtTree[0];
+      pawn.food = rewardMatrix[pawn.strategy][0];
     }
 
-    if (pawnsindexes.length === 1){
-      entities.pawns[pawnsindexes[0]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][0];
-    }
-    else if (pawnsindexes.length === 2){
-      for (let i = 0; i < 2; i++){
-        entities.pawns[pawnsindexes[i]].food = rewardMatrix[entities.pawns[pawnsindexes[0]].strategy][entities.pawns[pawnsindexes[1]].strategy+1];
-      }
+    else if (pawnsAtTree.length === 2){
+      let pawn1 = pawnsAtTree[0];
+      let pawn2 = pawnsAtTree[1];
+
+      pawn1.food = rewardMatrix[pawn1.strategy][pawn2.strategy+1];
+      pawn2.food = rewardMatrix[pawn2.strategy][pawn1.strategy+1];
     }
   }
 }
@@ -507,7 +530,7 @@ function newGeneration(){
         newPawns.push(createPawn(strategy));
       }
 
-      if (random() < (food - floor(food))){
+      if (random() < food - floor(food)){
         newPawns.push(createPawn(strategy));
       }
     }
