@@ -259,6 +259,10 @@ function drawGraph(history){
       textSize(lineSize*15);
       text(i, graphX + i * step, graphY + graphHeight + bufferY/2);
     }
+
+    //indicator for total days passed
+    textAlign(CENTER, BOTTOM);
+    text (days-1, graphX + graphWidth + bufferX/2, graphY + graphHeight);
   }
 
 }
