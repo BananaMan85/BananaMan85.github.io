@@ -193,8 +193,8 @@ function drawGraph(history){
   let graphHeight = height/2;
   let graphX = width - graphWidth;
   let graphY = height - graphHeight;
-  let bufferX = graphWidth/30;
-  let bufferY = graphHeight/30;
+  let bufferX = graphWidth/15;
+  let bufferY = graphHeight/15;
 
   graphWidth -= bufferX;
   graphX += bufferX;
@@ -239,7 +239,7 @@ function drawGraph(history){
     for (let i = 1; i > 0; i -= 0.2){
       fill('black');
       stroke(0, 255);
-      line(graphX - bufferX, graphY + graphHeight - graphHeight*i, graphX + bufferX, graphY + graphHeight - graphHeight*i);
+      line(graphX, graphY + graphHeight - graphHeight*i, graphX + bufferX/2, graphY + graphHeight - graphHeight*i);
     }
   }
 
