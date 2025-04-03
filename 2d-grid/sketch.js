@@ -202,7 +202,7 @@ function drawButton(x, y, w, h, label, size, color1, color2, action, a = null, b
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
 
   fill(isHovered ? color2 : color1); //change colour when hovered
-  stroke(0);
+  stroke(0, 255);
   strokeWeight(2);
   rect(x, y, w, h, 10);
 
@@ -266,10 +266,7 @@ function drawMatrix(){
       let y1 = matrixY + cellHeight * y;
       let w = cellWidth;
       let h = cellHeight;
-
-      fill(255);
-      stroke(0, 255);
-      rect(x1, y1, w, h);
+      
       drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, matrixX, matrixY, matrixWidth, matrixHeight);
     }
   }
