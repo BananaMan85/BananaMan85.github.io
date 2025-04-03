@@ -26,6 +26,8 @@ let data = {
 };
 let world = [];
 let availableTrees = [];
+let initialDoves = 5;
+let initialHawks = 5;
 let treeCount = 1;
 let treeDensity = 1/4; //amount of the board that will be populated by trees
 let cellSize = 50;
@@ -35,9 +37,12 @@ let foodUsed = false;
 let gridWidth, gridHeight; 
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
-let display = [drawGraph, drawMatrix ];
-let displayState = 1;
+let display = [drawGraph, drawMatrix, drawChangeConditions];
+let displayState = 0;
 let clickReleased = true;
+const SHOW_MY_GRAPH = 0;
+const SHOW_MATRIX = 1;
+const CHANGE_CONDITIONS = 2;
 const DOVE = 0;
 const HAWK = 1;
 
@@ -178,12 +183,13 @@ function draw() {
   background(220);
 
   let displayParameter;
-  if (displayState === 0){
+  if (displayState === SHOW_MY_GRAPH){
     displayParameter = data.history;
   }
 
-  drawWorld();
   display[displayState](displayParameter);
+  drawWorld();
+  drawButtons();
   updateWorld();
   updateData();
 
@@ -196,7 +202,7 @@ function keyPressed(){
   }
 }
 
-function drawButton(x, y, w, h, label, size, color1, color2, action, a = null, b = null, c = null, d = null){
+function drawButton(x, y, w, h, label, size, color1, color2, action, corners = [0, 0, 0, 0], parameters = [null, null, null, null]){
   //draws a button which runs a function when pressed
 
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
@@ -204,7 +210,7 @@ function drawButton(x, y, w, h, label, size, color1, color2, action, a = null, b
   fill(isHovered ? color2 : color1); //change colour when hovered
   stroke(0, 255);
   strokeWeight(2);
-  rect(x, y, w, h, 10);
+  rect(x, y, w, h, corners[0], corners[1], corners[2], corners[3]);
 
   fill(0);
   textAlign(CENTER, CENTER);
@@ -213,7 +219,7 @@ function drawButton(x, y, w, h, label, size, color1, color2, action, a = null, b
 
   //when the button is clicked run the button's function
   if (isHovered && mouseIsPressed && clickReleased){
-    action(a, b, c, d);
+    action(parameters[0], parameters[1], parameters[2], parameters[3]);
     clickReleased = false;
   }
 }
@@ -223,16 +229,77 @@ function mouseReleased(){
   clickReleased = true;
 }
 
+function drawButtons(){
+  let areaWidth = width/2;
+  let areaHeight = height/2;
+  let areaX = 0;
+  let areaY = areaHeight;
+  let bufferX = areaWidth/5;
+  let bufferY = areaHeight/5;
+  let size = min(areaHeight, areaWidth)/20;
+
+  fill(240);
+  stroke(0);
+  rect(areaX, areaY, areaWidth, areaHeight);
+
+  areaWidth -= bufferX*2;
+  areaX += bufferX;
+  areaHeight -= bufferY*2;
+  areaY += bufferY;
+  let buttonWidth = areaWidth/2;
+  let buttonHeight = areaHeight/4;
+
+  drawButton(areaX, areaY, buttonWidth, buttonHeight, "Graph", size, color(255, 255), color(0, 100), changeDisplay, [10, 0, 0 ,0], [SHOW_MY_GRAPH]);
+  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "Reward Matrix", size, color(255, 255), color(0, 100), changeDisplay, [0, 10, 0 ,0], [SHOW_MATRIX]);
+  drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
+
+}
+
+function changeDisplay(newDisplay){
+  displayState = newDisplay;
+}
+
+function changeConditions(condition){
+  let num = round(Number(prompt('Enter the new value')));
+}
+
+function drawChangeConditions(){
+  let areaWidth = width/2;
+  let areaHeight = height/2;
+  let areaX = areaWidth;
+  let areaY = areaHeight;
+  let bufferX = areaWidth/5;
+  let bufferY = areaHeight/5;
+  let size = min(areaHeight, areaWidth)/20;
+
+  //draw quadrant background
+  fill(240);
+  stroke(0);
+  rect(areaX, areaY, areaWidth, areaHeight);
+
+  areaWidth -= bufferX*2;
+  areaX += bufferX;
+  areaHeight -= bufferY*2;
+  areaY += bufferY;
+  let buttonWidth = areaWidth/2;
+  let buttonHeight = areaHeight/4;
+
+  drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [10, 0, 0 ,0], [DOVE]);
+  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, 10, 0 ,0], [HAWK]);
+  drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
+
+}
+
 function drawMatrix(){
   let matrixWidth = width/2;
   let matrixHeight = height/2;
-  let matrixX = width - matrixWidth;
-  let matrixY = height - matrixHeight;
+  let matrixX = matrixWidth;
+  let matrixY = matrixHeight;
   let bufferX = matrixWidth/5;
   let bufferY = matrixHeight/5;
-  let size = matrixHeight/20;
+  let size = min(matrixHeight, matrixWidth)/20;
 
-  //draw graph background
+  //draw quadrant background
   fill(240);
   stroke(0);
   rect(matrixX, matrixY, matrixWidth, matrixHeight);
@@ -240,7 +307,7 @@ function drawMatrix(){
   matrixWidth -= bufferX*2;
   matrixX += bufferX;
   matrixHeight -= bufferY*2;
-  matrixY += bufferY
+  matrixY += bufferY;
   let cellWidth = matrixWidth/2;
   let cellHeight = matrixHeight/2;
 
@@ -266,8 +333,26 @@ function drawMatrix(){
       let y1 = matrixY + cellHeight * y;
       let w = cellWidth;
       let h = cellHeight;
+      let corners = [0, 0, 0, 0];
+
+      if (y === 0){
+        if (x === 1){
+          corners[0] = 10;
+        }
+        else if (x === 2){
+          corners[1] = 10;
+        }
+      }
+      else if (y === 1){
+        if (x === 1){
+          corners[3] = 10;
+        }
+        else if (x === 2){
+          corners[2] = 10;
+        }
+      }
       
-      drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, matrixX, matrixY, matrixWidth, matrixHeight);
+      drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, corners, [matrixX, matrixY, matrixWidth, matrixHeight]);
     }
   }
 
@@ -281,7 +366,7 @@ function drawGraph(history){
   let graphY = height - graphHeight;
   let bufferX = graphWidth/15;
   let bufferY = graphHeight/15;
-  let lineSize = graphHeight/400;
+  let lineSize = min(graphHeight, graphWidth)/400;
 
   //draw graph background
   fill(240);
@@ -291,7 +376,7 @@ function drawGraph(history){
   graphWidth -= bufferX*2;
   graphX += bufferX;
   graphHeight -= bufferY*2;
-  graphY += bufferY
+  graphY += bufferY;
 
   let days = history.doves.length;
 
