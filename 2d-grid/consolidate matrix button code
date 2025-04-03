@@ -196,7 +196,7 @@ function keyPressed(){
   }
 }
 
-function drawButton(x, y, w, h, label, color1, color2, action, a = null, b = null, c = null, d = null){
+function drawButton(x, y, w, h, label, size, color1, color2, action, a = null, b = null, c = null, d = null){
   //draws a button which runs a function when pressed
 
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
@@ -208,7 +208,7 @@ function drawButton(x, y, w, h, label, color1, color2, action, a = null, b = nul
 
   fill(0);
   textAlign(CENTER, CENTER);
-  textSize(10);
+  textSize(size);
   text(label, x + w/2, y + h/2);
 
   //when the button is clicked run the button's function
@@ -270,12 +270,7 @@ function drawMatrix(){
       fill(255);
       stroke(0, 255);
       rect(x1, y1, w, h);
-      drawButton(x1, y1, w, h, '', color(255, 255), color(0, 100), changeRewardMatrix, matrixX, matrixY, matrixWidth, matrixHeight);
-
-      fill(0);
-      textAlign(CENTER, CENTER);
-      textSize(size);
-      text(rewardMatrix[y][x], matrixX + cellWidth * (x-1) + cellWidth/2, matrixY + cellHeight * y + cellHeight/2);
+      drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, matrixX, matrixY, matrixWidth, matrixHeight);
     }
   }
 
