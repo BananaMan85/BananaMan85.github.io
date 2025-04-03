@@ -35,6 +35,9 @@ let foodUsed = false;
 let gridWidth, gridHeight; 
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
+let display = [drawGraph, drawMatrix ];
+let displayState = 1;
+let clickReleased = true;
 const DOVE = 0;
 const HAWK = 1;
 
@@ -174,8 +177,13 @@ function setup() {
 function draw() {
   background(220);
 
+  let displayParameter;
+  if (displayState === 0){
+    displayParameter = data.history;
+  }
+
   drawWorld();
-  drawGraph(data.history);
+  display[displayState](displayParameter);
   updateWorld();
   updateData();
 
@@ -188,6 +196,92 @@ function keyPressed(){
   }
 }
 
+function drawButton(x, y, w, h, label, color1, color2, action, a = null, b = null, c = null, d = null){
+  //draws a button which runs a function when pressed
+
+  let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
+
+  fill(isHovered ? color2 : color1); //change colour when hovered
+  stroke(0);
+  strokeWeight(2);
+  rect(x, y, w, h, 10);
+
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(10);
+  text(label, x + w/2, y + h/2);
+
+  //when the button is clicked run the button's function
+  if (isHovered && mouseIsPressed && clickReleased){
+    action(a, b, c, d);
+    clickReleased = false;
+  }
+}
+
+function mouseReleased(){
+  //when mouse click is released allow buttons to be pressed again
+  clickReleased = true;
+}
+
+function drawMatrix(){
+  let matrixWidth = width/2;
+  let matrixHeight = height/2;
+  let matrixX = width - matrixWidth;
+  let matrixY = height - matrixHeight;
+  let bufferX = matrixWidth/5;
+  let bufferY = matrixHeight/5;
+  let size = matrixHeight/20;
+
+  //draw graph background
+  fill(240);
+  stroke(0);
+  rect(matrixX, matrixY, matrixWidth, matrixHeight);
+
+  matrixWidth -= bufferX*2;
+  matrixX += bufferX;
+  matrixHeight -= bufferY*2;
+  matrixY += bufferY
+  let cellWidth = matrixWidth/2;
+  let cellHeight = matrixHeight/2;
+
+  for (let y = 0; y < rewardMatrix.length; y++){
+
+    let strategy;
+    if (y === DOVE){
+      strategy = 'Dove';
+    }
+    else if (y === HAWK){
+      strategy = 'Hawk';
+    }
+    fill(0);
+    textSize(size);
+    textAlign(RIGHT, CENTER);
+    text(strategy, matrixX, matrixY + cellHeight * y + cellHeight/2);
+
+    textAlign(CENTER, BOTTOM);
+    text(`vs. ${strategy}`, matrixX + cellWidth * y + cellWidth/2, matrixY);
+
+    for (let x = 1; x < rewardMatrix[y].length; x++){
+      let x1 = matrixX + cellWidth * (x-1);
+      let y1 = matrixY + cellHeight * y;
+      let w = cellWidth;
+      let h = cellHeight;
+
+      fill(255);
+      stroke(0, 255);
+      rect(x1, y1, w, h);
+      drawButton(x1, y1, w, h, '', color(255, 255), color(0, 100), changeRewardMatrix, matrixX, matrixY, matrixWidth, matrixHeight);
+
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(size);
+      text(rewardMatrix[y][x], matrixX + cellWidth * (x-1) + cellWidth/2, matrixY + cellHeight * y + cellHeight/2);
+    }
+  }
+
+
+}
+
 function drawGraph(history){
   let graphWidth = width/2;
   let graphHeight = height/2;
@@ -195,6 +289,7 @@ function drawGraph(history){
   let graphY = height - graphHeight;
   let bufferX = graphWidth/15;
   let bufferY = graphHeight/15;
+  let lineSize = graphHeight/400;
 
   //draw graph background
   fill(240);
@@ -206,14 +301,13 @@ function drawGraph(history){
   graphHeight -= bufferY*2;
   graphY += bufferY
 
-
   let days = history.doves.length;
 
   if (days >= 2){
     let step = graphWidth / (days-1);
 
     //draw doves area
-    stroke(255, 255);
+    stroke(0, 255);
     fill(0, 0, 255);
     beginShape();
     vertex(graphX, graphY + graphHeight);
@@ -226,7 +320,7 @@ function drawGraph(history){
     endShape(CLOSE);
 
     //draw hawks area
-    stroke(255, 255);
+    stroke(0, 255);
     fill(255, 0, 0);
     beginShape();
     vertex(graphX, graphY);
@@ -240,7 +334,6 @@ function drawGraph(history){
 
     //draw markers for y-axis (amount of a certain strategy)
     for (let i = 1; i > 0; i -= 0.2){
-      let lineSize = graphHeight/400;
       fill('black');
       stroke(0, 255);
       rect(graphX - bufferX/2, graphY + graphHeight - graphHeight*i - lineSize/2, bufferX, lineSize);
@@ -251,7 +344,6 @@ function drawGraph(history){
 
     //draw markers for x-axis (days passed)
     for (let i = 0; i < days; i++){
-      let lineSize = graphHeight/400;
       fill('black');
       stroke(0, 255);
       rect(graphX + i * step - lineSize/2, graphY + graphHeight - bufferY/2, lineSize, bufferY);
@@ -265,6 +357,41 @@ function drawGraph(history){
     text (days-1, graphX + graphWidth + bufferX/2, graphY + graphHeight);
   }
 
+}
+
+function changeRewardMatrix(x, y, w, h){
+  let rewardLocation = [];
+  let num = Number(prompt('Enter the new value'));
+
+  if (mouseX > x && mouseX < x + w/2){
+    if (mouseY > y && mouseY < y + h/2){
+      rewardLocation = [1, 0];
+      if (num){
+        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
+      }
+      
+    }
+    else if (mouseY > y + h/2 && mouseY < y + h){
+      rewardLocation = [1, 1];
+      if (num){
+        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
+      }
+    }
+  }
+  else if (mouseX > x + w/2 && mouseX < x + w){
+    if (mouseY > y && mouseY < y + h/2){
+      rewardLocation = [2, 0];
+      if (num){
+        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
+      }
+    }
+    else if (mouseY > y + h/2 && mouseY < y + h){
+      rewardLocation = [2, 1];
+      if (num){
+        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
+      }
+    }
+  }
 }
 
 function updateData(){
