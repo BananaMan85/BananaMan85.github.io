@@ -24,30 +24,35 @@ let data = {
     hawks: [],
   },
 };
+const SHOW_MY_GRAPH = 0;
+const SHOW_MATRIX = 1;
+const CHANGE_CONDITIONS = 2;
+const DOVE = 0;
+const HAWK = 1;
+const TREE = -1;
+const GRID_WIDTH = -2;
+const GRID_HEIGHT = -3;
 let world = [];
 let availableTrees = [];
 let initialDoves = 5;
 let initialHawks = 5;
 let treeCount = 1;
 let treeDensity = 1/4; //amount of the board that will be populated by trees
-let cellSize = 50;
 let pawnsInPlace = false;
 let foodGiven = true;
 let foodUsed = false;
+let cellSize = 50;
 let gridWidth, gridHeight; 
+let newGridWidth = 24;
+let newGridHeight = 7;
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
 let display = [drawGraph, drawMatrix, drawChangeConditions];
-let displayState = 0;
+let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
-const SHOW_MY_GRAPH = 0;
-const SHOW_MATRIX = 1;
-const CHANGE_CONDITIONS = 2;
-const DOVE = 0;
-const HAWK = 1;
 
 //results for each type of encounter
-//                      DOVE  HAWK
+//                Alone DOVE HAWK
 let rewardMatrix = [[2, 7/4, 2/4], //DOVE
                     [2, 6/4, 3/4]];//HAWK
 
@@ -161,22 +166,7 @@ class Tree extends Entity{
 function setup() {
   createCanvas(1200, 700);
   
-  gridWidth = width/cellSize;
-  gridHeight = height/2/cellSize;
-
-  treeCount = floor((gridWidth-2) * (gridHeight-2) * treeDensity);
-
-  world = generateEmptyWorld(gridWidth, gridHeight);
-
-  placeTrees();
-  fillAvailableTrees();
-
-  for (let i = 0; i < 5; i++){
-    entities.pawns.push(createPawn(DOVE));
-  }
-  for (let i = 0; i < 5; i++){
-    entities.pawns.push(createPawn(HAWK));
-  }
+  applyConditions();
 }
 
 function draw() {
@@ -260,7 +250,56 @@ function changeDisplay(newDisplay){
 }
 
 function changeConditions(condition){
-  let num = round(Number(prompt('Enter the new value')));
+  let num = Number(prompt('Enter the new value'));
+
+  if (num){
+    if (condition === DOVE){
+      initialDoves = round(max(0, num));
+    }
+    else if (condition === HAWK){
+      initialHawks = round(max(0, num));
+    }
+    else if (condition === TREE){
+      treeDensity = round(max(0, min(1, num)), 2);
+    }
+    else if (condition === GRID_WIDTH){
+      newGridWidth = round(max(4, num));
+      newGridHeight = floor(newGridWidth * ((height/2)/width));
+    }
+    else if (condition === GRID_HEIGHT){
+      newGridHeight = round(max(4, num));
+      newGridWidth = floor(newGridHeight * (width/(height/2)));
+    }
+  }
+}
+
+function applyConditions(){
+  data.day = 0;
+  data.history.doves = [];
+  data.history.hawks = [];
+  entities.trees = [];
+  entities.pawns = [];
+  gameState = 2;
+
+  gridWidth = newGridWidth;
+  gridHeight = newGridHeight;
+
+  cellSize = min(width/gridWidth, height/2/gridHeight);
+
+  treeCount = floor((gridWidth-2) * (gridHeight-2) * treeDensity);
+
+  world = generateEmptyWorld(gridWidth, gridHeight);
+
+  placeTrees();
+  fillAvailableTrees();
+
+  for (let i = 0; i < initialDoves; i++){
+    entities.pawns.push(createPawn(DOVE));
+  }
+  for (let i = 0; i < initialHawks; i++){
+    entities.pawns.push(createPawn(HAWK));
+  }
+
 }
 
 function drawChangeConditions(){
@@ -282,11 +321,14 @@ function drawChangeConditions(){
   areaHeight -= bufferY*2;
   areaY += bufferY;
   let buttonWidth = areaWidth/2;
-  let buttonHeight = areaHeight/4;
+  let buttonHeight = areaHeight/3;
 
   drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [10, 0, 0 ,0], [DOVE]);
   drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, 10, 0 ,0], [HAWK]);
-  drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
+  drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, `World Width: ${newGridWidth}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_WIDTH]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, `World Height: ${newGridHeight}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_HEIGHT]);
+  drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Tree Density: ${treeDensity}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 10], [TREE]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Apply Conditions`, size, color(255, 255), color(0, 100), applyConditions, [0, 0, 10, 0]);
 
 }
 
@@ -366,7 +408,7 @@ function drawGraph(history){
   let graphY = height - graphHeight;
   let bufferX = graphWidth/15;
   let bufferY = graphHeight/15;
-  let lineSize = min(graphHeight, graphWidth)/400;
+  let lineSize = min(graphHeight, graphWidth)/200;
 
   //draw graph background
   fill(240);
@@ -413,9 +455,10 @@ function drawGraph(history){
     for (let i = 1; i > 0; i -= 0.2){
       fill('black');
       stroke(0, 255);
-      rect(graphX - bufferX/2, graphY + graphHeight - graphHeight*i - lineSize/2, bufferX, lineSize);
+      strokeWeight(lineSize);
+      line(graphX - bufferX/2, graphY + graphHeight - graphHeight*i, graphX + bufferX/2, graphY + graphHeight - graphHeight*i)
       textAlign(RIGHT, CENTER);
-      textSize(lineSize*15);
+      textSize(lineSize*6);
       text(round(i, 1), graphX - bufferX/2, graphY + graphHeight - graphHeight*i);
     }
 
@@ -423,9 +466,10 @@ function drawGraph(history){
     for (let i = 0; i < days; i++){
       fill('black');
       stroke(0, 255);
-      rect(graphX + i * step - lineSize/2, graphY + graphHeight - bufferY/2, lineSize, bufferY);
+      strokeWeight(lineSize);
+      line(graphX + i * step, graphY + graphHeight - bufferY/2, graphX + i * step, graphY + graphHeight + bufferY/2)
       textAlign(CENTER, TOP);
-      textSize(lineSize*15);
+      textSize(lineSize*6);
       text(i, graphX + i * step, graphY + graphHeight + bufferY/2);
     }
 
@@ -440,31 +484,24 @@ function changeRewardMatrix(x, y, w, h){
   let rewardLocation = [];
   let num = Number(prompt('Enter the new value'));
 
-  if (mouseX > x && mouseX < x + w/2){
-    if (mouseY > y && mouseY < y + h/2){
-      rewardLocation = [1, 0];
-      if (num){
+  if (num){
+    if (mouseX > x && mouseX < x + w/2){
+      if (mouseY > y && mouseY < y + h/2){
+        rewardLocation = [1, 0];
         rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
-      
-    }
-    else if (mouseY > y + h/2 && mouseY < y + h){
-      rewardLocation = [1, 1];
-      if (num){
+      else if (mouseY > y + h/2 && mouseY < y + h){
+        rewardLocation = [1, 1];
         rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
     }
-  }
-  else if (mouseX > x + w/2 && mouseX < x + w){
-    if (mouseY > y && mouseY < y + h/2){
-      rewardLocation = [2, 0];
-      if (num){
+    else if (mouseX > x + w/2 && mouseX < x + w){
+      if (mouseY > y && mouseY < y + h/2){
+        rewardLocation = [2, 0];
         rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
-    }
-    else if (mouseY > y + h/2 && mouseY < y + h){
-      rewardLocation = [2, 1];
-      if (num){
+      else if (mouseY > y + h/2 && mouseY < y + h){
+        rewardLocation = [2, 1];
         rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
     }
