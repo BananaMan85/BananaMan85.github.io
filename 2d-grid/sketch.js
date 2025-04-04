@@ -24,11 +24,12 @@ let data = {
     hawks: [],
   },
 };
+const MAX_PAWNS_PER_TREE = 2;
 const SHOW_MY_GRAPH = 0;
 const SHOW_MATRIX = 1;
 const CHANGE_CONDITIONS = 2;
 const SHOW_EXAMPLES = 3;
-const SHOW_INSTRUCTIONS = 4;
+const SHOW_GAME_RULES = 4;
 const DOVE = 0;
 const HAWK = 1;
 const TREE = -1;
@@ -51,7 +52,7 @@ let newGridWidth = 24;
 let newGridHeight = 7;
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
-let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawInstructions];
+let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawGameRules];
 let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
 
@@ -159,23 +160,24 @@ class Tree extends Entity{
   constructor (x, y){
     super(x, y);
     this.pawns = 0;
-    this.full = false;
+    // this.full = false;
 
   }
 
-  updatePawns(){
-    if (this.pawns >= 2){
-      this.full = true;
-    }
-    else{
-      this.full = false;
-    }
-  }
+  // updatePawns(){
+  //   if (this.pawns >= MAX_PAWNS_PER_TREE){
+  //     this.full = true;
+  //   }
+  //   else{
+  //     this.full = false;
+  //   }
+  // }
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   
+  newGridHeight = floor(newGridWidth * (height/2/width));
   applyConditions();
 }
 
@@ -201,7 +203,7 @@ function draw() {
 }
 
 function keyPressed(){
-    nextGameState();
+  nextGameState();
 }
 
 function drawArrow(x1, y1, x2, y2, size = 10){
@@ -209,7 +211,7 @@ function drawArrow(x1, y1, x2, y2, size = 10){
   strokeWeight(2);
   fill(0, 255);
 
-  let angle = atan2(y2 - y1, x2 - x1)
+  let angle = atan2(y2 - y1, x2 - x1);
 
   let arrowX1 = x2 - size * cos(angle - PI / 6);
   let arrowY1 = y2 - size * sin(angle - PI / 6);
@@ -234,6 +236,7 @@ function drawButton(x, y, w, h, label, size, color1, color2, action, corners = [
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(size);
+  strokeWeight(0);
   text(label, x + w/2, y + h/2);
 
   //when the button is clicked run the button's function
@@ -259,6 +262,7 @@ function drawButtons(){
 
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
   areaWidth -= bufferX*2;
@@ -277,7 +281,7 @@ function drawButtons(){
   drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Autoplay: ${autoPlayTag}`, size, color(255, 255), color(0, 100), toggleAutoPlay, [0, 0, 0, 0]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Skip Movement: ${skipMovementTag}`, size, color(255, 255), color(0, 100), toggleSkipMovement, [0, 0, 0, 0]);
   drawButton(areaX, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Reset", size, color(255, 255), color(0, 100), applyConditions, [0, 0, 0, 10]);
-  drawButton(areaX + buttonWidth, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Instructions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 10, 0], [SHOW_INSTRUCTIONS]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Game Rules", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 10, 0], [SHOW_GAME_RULES]);
 
 }
 
@@ -308,7 +312,7 @@ function changeConditions(condition){
     }
     else if (condition === GRID_WIDTH){
       newGridWidth = round(max(4, num));
-      newGridHeight = floor(newGridWidth * ((height/2)/width));
+      newGridHeight = floor(newGridWidth * (height/2/width));
     }
     else if (condition === GRID_HEIGHT){
       newGridHeight = round(max(4, num));
@@ -359,6 +363,7 @@ function drawExamples(){
   //draw quadrant background
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
   areaWidth -= bufferX*2;
@@ -370,7 +375,7 @@ function drawExamples(){
 
 }
 
-function drawInstructions(){
+function drawGameRules(){
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
@@ -382,6 +387,7 @@ function drawInstructions(){
   //draw quadrant background
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
   areaWidth -= bufferX*2;
@@ -403,6 +409,7 @@ function drawChangeConditions(){
   //draw quadrant background
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
   areaWidth -= bufferX*2;
@@ -433,7 +440,14 @@ function drawMatrix(){
   //draw quadrant background
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(matrixX, matrixY, matrixWidth, matrixHeight);
+
+  fill(0);
+  strokeWeight(0);
+  textSize(size);
+  textAlign(LEFT, BOTTOM);
+  text("Rewards Shown For Pawn on the Left", matrixX, matrixY + matrixHeight);
 
   matrixWidth -= bufferX*2;
   matrixX += bufferX;
@@ -452,6 +466,7 @@ function drawMatrix(){
       strategy = 'Hawk';
     }
     fill(0);
+    strokeWeight(0);
     textSize(size);
     textAlign(RIGHT, CENTER);
     text(strategy, matrixX, matrixY + cellHeight * y + cellHeight/2);
@@ -485,30 +500,25 @@ function drawMatrix(){
       
       drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, corners, [matrixX, matrixY, matrixWidth, matrixHeight]);
     }
-
-    for (let x = 1; x < rewardMatrix[0].length; x++){
-      let x1 = matrixX + cellWidth * (x-1);
-      let w = cellWidth;
-      let h = cellHeight;
-
-      if (rewardMatrix[0][x] < rewardMatrix[1][x]){
-        drawArrow(x1 + w/2 - w/4, matrixY + h/2, x1 + w/2 - w/4, matrixY + h/2 + h, size/2);
-      }
-      else if (rewardMatrix[1][x] < rewardMatrix[0][x]){
-        drawArrow(x1 + w/2 - w/4, matrixY + h/2 + h, x1 + w/2 - w/4, matrixY + h/2, size/2);
-      }
-      else{
-        push();
-        strokeWeight(size/4);
-        line(x1 + w/2 - w/4 - w/8, matrixY + h - h/8, x1 + w/2 - w/4 + w/8, matrixY + h - h/8);
-        line(x1 + w/2 - w/4 - w/8, matrixY + h + h/8, x1 + w/2 - w/4 + w/8, matrixY + h + h/8);
-        pop();
-      }
-    }
-
   }
+  
+  for (let x = 1; x < rewardMatrix[0].length; x++){
+    let x1 = matrixX + cellWidth * (x-1);
+    let w = cellWidth;
+    let h = cellHeight;
 
-
+    if (rewardMatrix[0][x] < rewardMatrix[1][x]){
+      drawArrow(x1 + w/2 - w/4, matrixY + h/2, x1 + w/2 - w/4, matrixY + h/2 + h, size/2);
+    }
+    else if (rewardMatrix[1][x] < rewardMatrix[0][x]){
+      drawArrow(x1 + w/2 - w/4, matrixY + h/2 + h, x1 + w/2 - w/4, matrixY + h/2, size/2);
+    }
+    else{
+      strokeWeight(size/4);
+      line(x1 + w/2 - w/4 - w/8, matrixY + h - h/8, x1 + w/2 - w/4 + w/8, matrixY + h - h/8);
+      line(x1 + w/2 - w/4 - w/8, matrixY + h + h/8, x1 + w/2 - w/4 + w/8, matrixY + h + h/8);
+    }
+  }
 }
 
 function drawGraph(history){
@@ -523,6 +533,7 @@ function drawGraph(history){
   //draw graph background
   fill(240);
   stroke(0);
+  strokeWeight(2);
   rect(graphX, graphY, graphWidth, graphHeight);
 
   graphWidth -= bufferX*2;
@@ -537,6 +548,7 @@ function drawGraph(history){
 
     //draw doves area
     stroke(0, 255);
+    strokeWeight(2);
     fill(0, 0, 255);
     beginShape();
     vertex(graphX, graphY + graphHeight);
@@ -550,6 +562,7 @@ function drawGraph(history){
 
     //draw hawks area
     stroke(0, 255);
+    strokeWeight(2);
     fill(255, 0, 0);
     beginShape();
     vertex(graphX, graphY);
@@ -566,9 +579,10 @@ function drawGraph(history){
       fill('black');
       stroke(0, 255);
       strokeWeight(lineSize);
-      line(graphX - bufferX/2, graphY + graphHeight - graphHeight*i, graphX + bufferX/2, graphY + graphHeight - graphHeight*i)
+      line(graphX - bufferX/2, graphY + graphHeight - graphHeight*i, graphX + bufferX/2, graphY + graphHeight - graphHeight*i);
       textAlign(RIGHT, CENTER);
       textSize(lineSize*6);
+      strokeWeight(0);
       text(round(i, 1), graphX - bufferX/2, graphY + graphHeight - graphHeight*i);
     }
 
@@ -577,15 +591,24 @@ function drawGraph(history){
       fill('black');
       stroke(0, 255);
       strokeWeight(lineSize);
-      line(graphX + i * step, graphY + graphHeight - bufferY/2, graphX + i * step, graphY + graphHeight + bufferY/2)
+      line(graphX + i * step, graphY + graphHeight - bufferY/2, graphX + i * step, graphY + graphHeight + bufferY/2);
       textAlign(CENTER, TOP);
       textSize(lineSize*6);
+      strokeWeight(0);
       text(i, graphX + i * step, graphY + graphHeight + bufferY/2);
     }
 
     //indicator for total days passed
     textAlign(CENTER, BOTTOM);
     text (days-1, graphX + graphWidth + bufferX/2, graphY + graphHeight);
+  }
+  else {
+    textAlign(CENTER, CENTER);
+    textSize(lineSize*20);
+    fill(0, 255);
+    stroke(0, 255);
+    strokeWeight(0);
+    text("Not Enough Data!", graphX + graphWidth/2, graphY + graphHeight/2);
   }
 
 }
@@ -681,9 +704,9 @@ function findTrees(){
   for (let pawn of entities.pawns){
     pawn.findDestination();
     pawn.move();
-    for (let tree of entities.trees){
-      tree.updatePawns();
-    }
+    // for (let tree of entities.trees){
+    //   tree.updatePawns();
+    // }
   }
   
   if (!foodGiven){
@@ -745,7 +768,7 @@ function placeTrees(){
 
 function fillAvailableTrees(){
   availableTrees = [];
-  for (let i = 0; i < 2; i++){
+  for (let i = 0; i < MAX_PAWNS_PER_TREE; i++){
     for (let tree of entities.trees){
       availableTrees.push(tree);
     }
@@ -783,6 +806,7 @@ function drawWorld(xOffset = 0, yOffset = 0){
 
       fill("white");
       stroke(0, 255);
+      strokeWeight(1);
       rect(xCoord+xOffset, yCoord+yOffset, cellSize, cellSize);
 
       if (world[y][x].includes('tree')){
@@ -823,15 +847,15 @@ function updateWorld(){
   }
 }
 
-function isWorldFull(){
-  for (let tree of entities.trees){
-    if (!tree.full){
-      return false;
-    }
-  }
+// function isWorldFull(){
+//   for (let tree of entities.trees){
+//     if (!tree.full){
+//       return false;
+//     }
+//   }
   
-  return true;
-}
+//   return true;
+// }
 
 function checkPawnsInPlace(){
   for (let pawn of entities.pawns){
@@ -857,7 +881,7 @@ function runLogic(){
       pawn.food = rewardMatrix[pawn.strategy][0];
     }
 
-    else if (pawnsAtTree.length === 2){
+    else if (pawnsAtTree.length === MAX_PAWNS_PER_TREE){
       let pawn1 = pawnsAtTree[0];
       let pawn2 = pawnsAtTree[1];
 
