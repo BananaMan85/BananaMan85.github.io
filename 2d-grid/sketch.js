@@ -174,7 +174,7 @@ class Tree extends Entity{
 }
 
 function setup() {
-  createCanvas(1200, 700);
+  createCanvas(windowWidth, windowHeight);
   
   applyConditions();
 }
@@ -202,6 +202,23 @@ function draw() {
 
 function keyPressed(){
     nextGameState();
+}
+
+function drawArrow(x1, y1, x2, y2, size = 10){
+  stroke(0, 255);
+  strokeWeight(2);
+  fill(0, 255);
+
+  let angle = atan2(y2 - y1, x2 - x1)
+
+  let arrowX1 = x2 - size * cos(angle - PI / 6);
+  let arrowY1 = y2 - size * sin(angle - PI / 6);
+  let arrowX2 = x2 - size * cos(angle + PI / 6);
+  let arrowY2 = y2 - size * sin(angle + PI / 6);
+
+  line(x1, y1, x2, y2);
+
+  triangle(x2, y2, arrowX1, arrowY1, arrowX2, arrowY2);
 }
 
 function drawButton(x, y, w, h, label, size, color1, color2, action, corners = [0, 0, 0, 0], parameters = [null, null, null, null]){
@@ -468,6 +485,27 @@ function drawMatrix(){
       
       drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, corners, [matrixX, matrixY, matrixWidth, matrixHeight]);
     }
+
+    for (let x = 1; x < rewardMatrix[0].length; x++){
+      let x1 = matrixX + cellWidth * (x-1);
+      let w = cellWidth;
+      let h = cellHeight;
+
+      if (rewardMatrix[0][x] < rewardMatrix[1][x]){
+        drawArrow(x1 + w/2 - w/4, matrixY + h/2, x1 + w/2 - w/4, matrixY + h/2 + h, size/2);
+      }
+      else if (rewardMatrix[1][x] < rewardMatrix[0][x]){
+        drawArrow(x1 + w/2 - w/4, matrixY + h/2 + h, x1 + w/2 - w/4, matrixY + h/2, size/2);
+      }
+      else{
+        push();
+        strokeWeight(size/4);
+        line(x1 + w/2 - w/4 - w/8, matrixY + h - h/8, x1 + w/2 - w/4 + w/8, matrixY + h - h/8);
+        line(x1 + w/2 - w/4 - w/8, matrixY + h + h/8, x1 + w/2 - w/4 + w/8, matrixY + h + h/8);
+        pop();
+      }
+    }
+
   }
 
 
