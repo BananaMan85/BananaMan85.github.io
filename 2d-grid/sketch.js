@@ -27,6 +27,8 @@ let data = {
 const SHOW_MY_GRAPH = 0;
 const SHOW_MATRIX = 1;
 const CHANGE_CONDITIONS = 2;
+const SHOW_EXAMPLES = 3;
+const SHOW_INSTRUCTIONS = 4;
 const DOVE = 0;
 const HAWK = 1;
 const TREE = -1;
@@ -34,6 +36,8 @@ const GRID_WIDTH = -2;
 const GRID_HEIGHT = -3;
 let world = [];
 let availableTrees = [];
+let autoPlay = false;
+let skipMovement = false;
 let initialDoves = 5;
 let initialHawks = 5;
 let treeCount = 1;
@@ -47,7 +51,7 @@ let newGridWidth = 24;
 let newGridHeight = 7;
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
-let display = [drawGraph, drawMatrix, drawChangeConditions];
+let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawInstructions];
 let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
 
@@ -123,21 +127,27 @@ class Pawn extends Entity{
       }
     }
 
-    if (distX !== 0 || distY !== 0){
-      if (abs(distX) > abs(distY)){
-        if (distX > 0){
-          this.x += 1;
+    if (skipMovement){
+      this.x = this.destination[0];
+      this.y = this.destination[1];
+    }
+    else if (!skipMovement){
+      if (distX !== 0 || distY !== 0){
+        if (abs(distX) > abs(distY)){
+          if (distX > 0){
+            this.x += 1;
+          }
+          else{
+            this.x -= 1;
+          }
         }
         else{
-          this.x -= 1;
-        }
-      }
-      else{
-        if (distY > 0){
-          this.y += 1;
-        }
-        else{
-          this.y -= 1;
+          if (distY > 0){
+            this.y += 1;
+          }
+          else{
+            this.y -= 1;
+          }
         }
       }
     }
@@ -184,12 +194,14 @@ function draw() {
   updateData();
 
   gameCycle[gameState]();
+
+  if (autoPlay){
+    nextGameState();
+  }
 }
 
 function keyPressed(){
-  if (key === ' '){
     nextGameState();
-  }
 }
 
 function drawButton(x, y, w, h, label, size, color1, color2, action, corners = [0, 0, 0, 0], parameters = [null, null, null, null]){
@@ -238,11 +250,26 @@ function drawButtons(){
   areaY += bufferY;
   let buttonWidth = areaWidth/2;
   let buttonHeight = areaHeight/4;
+  let autoPlayTag = autoPlay ? "On" : "Off";
+  let skipMovementTag = skipMovement ? "On" : "Off";
 
   drawButton(areaX, areaY, buttonWidth, buttonHeight, "Graph", size, color(255, 255), color(0, 100), changeDisplay, [10, 0, 0 ,0], [SHOW_MY_GRAPH]);
   drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "Reward Matrix", size, color(255, 255), color(0, 100), changeDisplay, [0, 10, 0 ,0], [SHOW_MATRIX]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, "Examples", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [SHOW_EXAMPLES]);
+  drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Autoplay: ${autoPlayTag}`, size, color(255, 255), color(0, 100), toggleAutoPlay, [0, 0, 0, 0]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Skip Movement: ${skipMovementTag}`, size, color(255, 255), color(0, 100), toggleSkipMovement, [0, 0, 0, 0]);
+  drawButton(areaX, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Reset", size, color(255, 255), color(0, 100), applyConditions, [0, 0, 0, 10]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Instructions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 10, 0], [SHOW_INSTRUCTIONS]);
 
+}
+
+function toggleAutoPlay(){
+  autoPlay = !autoPlay;
+}
+
+function toggleSkipMovement(){
+  skipMovement = !skipMovement;
 }
 
 function changeDisplay(newDisplay){
@@ -280,6 +307,7 @@ function applyConditions(){
   entities.trees = [];
   entities.pawns = [];
   gameState = 2;
+  foodGiven = true;
 
   gridWidth = newGridWidth;
   gridHeight = newGridHeight;
@@ -299,6 +327,50 @@ function applyConditions(){
   for (let i = 0; i < initialHawks; i++){
     entities.pawns.push(createPawn(HAWK));
   }
+
+}
+
+function drawExamples(){
+  let areaWidth = width/2;
+  let areaHeight = height/2;
+  let areaX = areaWidth;
+  let areaY = areaHeight;
+  let bufferX = areaWidth/5;
+  let bufferY = areaHeight/5;
+  let size = min(areaHeight, areaWidth)/20;
+
+  //draw quadrant background
+  fill(240);
+  stroke(0);
+  rect(areaX, areaY, areaWidth, areaHeight);
+
+  areaWidth -= bufferX*2;
+  areaX += bufferX;
+  areaHeight -= bufferY*2;
+  areaY += bufferY;
+  let buttonWidth = areaWidth/3;
+  let buttonHeight = areaHeight/3;
+
+}
+
+function drawInstructions(){
+  let areaWidth = width/2;
+  let areaHeight = height/2;
+  let areaX = areaWidth;
+  let areaY = areaHeight;
+  let bufferX = areaWidth/5;
+  let bufferY = areaHeight/5;
+  let size = min(areaHeight, areaWidth)/20;
+
+  //draw quadrant background
+  fill(240);
+  stroke(0);
+  rect(areaX, areaY, areaWidth, areaHeight);
+
+  areaWidth -= bufferX*2;
+  areaX += bufferX;
+  areaHeight -= bufferY*2;
+  areaY += bufferY;
 
 }
 
