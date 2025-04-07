@@ -55,6 +55,12 @@ let gameState = 2;
 let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawGameRules];
 let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
+let treeMap = new Map();
+
+let fullTree;
+let halfTree;
+let emptyTree;
+let grass;
 
 //results for each type of encounter
 //                Alone DOVE HAWK
@@ -62,7 +68,40 @@ let rewardMatrix = [[2, 7/4, 2/4], //DOVE
                     [2, 6/4, 3/4]];//HAWK
 
 
- 
+function preload(){
+  fullTree = loadImage("images/apple-tree.jpg");
+  halfTree = loadImage("images/half-apple-tree.jpg");
+  emptyTree = loadImage("images/tree.jpg");
+  grass = loadImage("images/grass.jpg");
+}
+                    
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  
+  newGridHeight = floor(newGridWidth * (height/2/width));
+  applyConditions();
+}
+
+function draw() {
+  background(220);
+  
+  let displayParameter;
+  if (displayState === SHOW_MY_GRAPH){
+    displayParameter = data.history;
+  }
+  
+  display[displayState](displayParameter);
+  drawWorld();
+  drawButtons();
+  updateWorld();
+  updateData();
+  
+  gameCycle[gameState]();
+  
+  if (autoPlay){
+    nextGameState();
+  }
+}
 class Entity {
 
   constructor (x, y){
@@ -160,6 +199,7 @@ class Tree extends Entity{
   constructor (x, y){
     super(x, y);
     this.pawns = 0;
+    this.food = 'full';
     // this.full = false;
 
   }
@@ -172,34 +212,6 @@ class Tree extends Entity{
   //     this.full = false;
   //   }
   // }
-}
-
-function setup() {
-  createCanvas(windowWidth, windowHeight);
-  
-  newGridHeight = floor(newGridWidth * (height/2/width));
-  applyConditions();
-}
-
-function draw() {
-  background(220);
-
-  let displayParameter;
-  if (displayState === SHOW_MY_GRAPH){
-    displayParameter = data.history;
-  }
-
-  display[displayState](displayParameter);
-  drawWorld();
-  drawButtons();
-  updateWorld();
-  updateData();
-
-  gameCycle[gameState]();
-
-  if (autoPlay){
-    nextGameState();
-  }
 }
 
 function keyPressed(){
@@ -328,7 +340,8 @@ function applyConditions(){
   entities.trees = [];
   entities.pawns = [];
   gameState = 2;
-  foodGiven = true;
+  foodGiven = false;
+  foodUsed = true;
 
   gridWidth = newGridWidth;
   gridHeight = newGridHeight;
@@ -661,7 +674,7 @@ function updateData(){
 
 function nextGameState(){
   checkPawnsInPlace();
-  if (pawnsInPlace && foodGiven){
+  if (pawnsInPlace && (foodGiven || foodUsed)){
     gameState++;
 
     if (gameState >= gameCycle.length){
@@ -749,7 +762,7 @@ function createPawn(strategy){
 }
 
 function placeTrees(){
-
+  treeMap = new Map();
   let availablePositions = [];
 
   for (let x = 1; x < gridWidth - 1; x++){
@@ -762,7 +775,9 @@ function placeTrees(){
 
   for (let i = 0; i < treeCount && i < availablePositions.length; i++){
     let [treeX, treeY] = availablePositions[i];
-    entities.trees.push(new Tree(treeX, treeY));
+    let tree = new Tree(treeX, treeY);
+    entities.trees.push(tree);
+    treeMap.set(`${treeX}, ${treeY}`, tree);
   }
 }
 
@@ -804,21 +819,25 @@ function drawWorld(xOffset = 0, yOffset = 0){
     for (let x = 0; x < world[y].length; x++){
       xCoord = x * cellSize;
 
-      fill("white");
-      stroke(0, 255);
-      strokeWeight(1);
-      rect(xCoord+xOffset, yCoord+yOffset, cellSize, cellSize);
+      image(grass, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
 
       if (world[y][x].includes('tree')){
-        fill("black");
-        textAlign(CENTER,CENTER);
-        textSize(cellSize/2);
-        text('T', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
+        let tree = treeMap.get(`${x}, ${y}`);
+        if (tree.food === 'empty'){
+          image(emptyTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+        }
+        else if (tree.food === 'half'){
+          image(halfTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+        }
+        else if (tree.food === 'full'){
+          image(fullTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+        }
       }
       else if (world[y][x].includes('pawn')){
         fill("black");
         textAlign(CENTER,CENTER);
         textSize(cellSize/2);
+        strokeWeight(0);
         text('P', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
       }
     }
@@ -877,6 +896,7 @@ function runLogic(){
     );
   
     if (pawnsAtTree.length === 1){
+      tree.food = 'half';
       let pawn = pawnsAtTree[0];
       pawn.food = rewardMatrix[pawn.strategy][0];
     }
@@ -887,14 +907,18 @@ function runLogic(){
 
       pawn1.food = rewardMatrix[pawn1.strategy][pawn2.strategy+1];
       pawn2.food = rewardMatrix[pawn2.strategy][pawn1.strategy+1];
+
+      if (pawn1.strategy === DOVE && pawn2.strategy === DOVE){
+        tree.food = 'empty';
+      }
+      else{
+        tree.food = 'half';
+      }
     }
   }
 }
 
 function goHome(){
-  for (let tree of entities.trees){
-    tree.pawns = 0;
-  }
   for (let pawn of entities.pawns){
     pawn.atDestination = false;
     pawn.destination = [pawn.homeX, pawn.homeY];
@@ -922,5 +946,10 @@ function newGeneration(){
 
     entities.pawns = newPawns;
     foodUsed = true;
+    foodGiven = false;
+    for (let tree of entities.trees){
+      tree.pawns = 0;
+      tree.food = 'full';
+    }
   }
 }
