@@ -58,12 +58,7 @@ let clickReleased = true;
 let treeMap = new Map();
 let pawnMap = new Map();
 
-let fullTree;
-let halfTree;
-let emptyTree;
-let grass;
-let doveImage;
-let hawkImage;
+let fullTree, halfTree, emptyTree, grass, doveImage, hawkImage; //variables to hold images
 
 //results for each type of encounter
 //                Alone DOVE HAWK
@@ -88,7 +83,6 @@ function setup() {
 }
 
 function draw() {
-  background(220);
   
   let displayParameter;
   
@@ -205,18 +199,7 @@ class Tree extends Entity{
     super(x, y);
     this.pawns = 0;
     this.food = 'full';
-    // this.full = false;
-
   }
-
-  // updatePawns(){
-  //   if (this.pawns >= MAX_PAWNS_PER_TREE){
-  //     this.full = true;
-  //   }
-  //   else{
-  //     this.full = false;
-  //   }
-  // }
 }
 
 function keyPressed(){
@@ -891,16 +874,6 @@ function updateWorld(){
     world[y][x].push('tree');
   }
 }
-
-// function isWorldFull(){
-//   for (let tree of entities.trees){
-//     if (!tree.full){
-//       return false;
-//     }
-//   }
-  
-//   return true;
-// }
 
 function checkPawnsInPlace(){
   for (let pawn of entities.pawns){
