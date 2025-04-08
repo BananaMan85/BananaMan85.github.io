@@ -35,6 +35,7 @@ const HAWK = 1;
 const TREE = -1;
 const GRID_WIDTH = -2;
 const GRID_HEIGHT = -3;
+const CORNER_ROUNDING = 10;
 let world = [];
 let availableTrees = [];
 let autoPlay = false;
@@ -271,7 +272,7 @@ function drawButtons(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = min(areaHeight, areaWidth)/20;
+  let size = areaWidth/40;
 
   //draw and outline the quadrant
   fill(240);
@@ -292,14 +293,14 @@ function drawButtons(){
   let skipMovementTag = skipMovement ? "On" : "Off";
 
   //draw each button in their places
-  drawButton(areaX, areaY, buttonWidth, buttonHeight, "Graph", size, color(255, 255), color(0, 100), changeDisplay, [10, 0, 0 ,0], [SHOW_MY_GRAPH]);
-  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "Reward Matrix", size, color(255, 255), color(0, 100), changeDisplay, [0, 10, 0 ,0], [SHOW_MATRIX]);
+  drawButton(areaX, areaY, buttonWidth, buttonHeight, "Graph", size, color(255, 255), color(0, 100), changeDisplay, [CORNER_ROUNDING, 0, 0 ,0], [SHOW_MY_GRAPH]);
+  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "Reward Matrix", size, color(255, 255), color(0, 100), changeDisplay, [0, CORNER_ROUNDING, 0 ,0], [SHOW_MATRIX]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, "Examples", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [SHOW_EXAMPLES]);
   drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Autoplay: ${autoPlayTag}`, size, color(255, 255), color(0, 100), toggleAutoPlay, [0, 0, 0, 0]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Skip Movement: ${skipMovementTag}`, size, color(255, 255), color(0, 100), toggleSkipMovement, [0, 0, 0, 0]);
-  drawButton(areaX, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Reset", size, color(255, 255), color(0, 100), applyConditions, [0, 0, 0, 10]);
-  drawButton(areaX + buttonWidth, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Game Rules", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 10, 0], [SHOW_GAME_RULES]);
+  drawButton(areaX, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Reset", size, color(255, 255), color(0, 100), applyConditions, [0, 0, 0, CORNER_ROUNDING]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*3, buttonWidth, buttonHeight, "Game Rules", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, CORNER_ROUNDING, 0], [SHOW_GAME_RULES]);
 
 }
 
@@ -393,7 +394,7 @@ function drawExamples(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = min(areaHeight, areaWidth)/20;
+  let size = areaWidth/40;
 
   //draw quadrant background
   fill(240);
@@ -418,7 +419,7 @@ function drawGameRules(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = min(areaHeight, areaWidth)/20;
+  let size = areaWidth/40;
 
   //draw quadrant background
   fill(240);
@@ -426,11 +427,44 @@ function drawGameRules(){
   strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
-  areaWidth -= bufferX*2;
-  areaX += bufferX;
-  areaHeight -= bufferY*2;
-  areaY += bufferY;
+  // areaWidth -= bufferX*2;
+  // areaX += bufferX;
+  // areaHeight -= bufferY*2;
+  // areaY += bufferY;
+  
+  //write game rules
+  push();
+  fill(0);
+  strokeWeight(0);
+  textSize(size * (3/4));
+  textAlign(LEFT, CENTER);
+  rectMode(CENTER);
+  text(`-Each pawn moves to a random tree 
+    \n-When alone, a pawn will eat as much food as it can reach (2) 
+    \n-If a dove meets a dove, they share and work together to get more food
+    \n-If a hawk meets a hawk, they fight and lose some energy
+    \n-If a dove meets a hawk, the hawk steals food from the dove
+    \n-A pawn creates 1 offspring per food
+    \n-Remaining food converts to a probability for another offspring
+    \n-Each pawn only lives for one day
+    \n(See Reward Matrix for specific values)`,
+  areaX + areaWidth/2 + size, areaY + areaHeight/2, areaWidth, areaHeight);
+  pop();
 
+  //draw images
+  let treeSize = size*5;
+  let treeX = areaX + areaWidth - areaWidth/4;
+  let treeY = areaY + areaHeight/2;
+  imageMode(CENTER);
+  fill(0);
+  strokeWeight(0);
+  textSize(size * (3/4));
+  textAlign(CENTER, CENTER);
+  image(fullTree, treeX, treeY, treeSize, treeSize);
+  image(doveImage, treeX - treeSize/2, treeY + treeSize/2, treeSize/4, treeSize/4);
+  text("Dove", treeX - treeSize/2 - size/2, treeY + treeSize * (3/4), size);
+  image(hawkImage, treeX + treeSize/2, treeY + treeSize/2, treeSize/4, treeSize/4);
+  text("Hawk", treeX + treeSize/2 - size/2, treeY + treeSize * (3/4), size);
 }
 
 function drawChangeConditions(){
@@ -443,7 +477,7 @@ function drawChangeConditions(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = min(areaHeight, areaWidth)/20;
+  let size = areaWidth/40;
 
   //draw quadrant background
   fill(240);
@@ -460,12 +494,12 @@ function drawChangeConditions(){
   let buttonHeight = areaHeight/3;
 
   //draw each button in their place
-  drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [10, 0, 0 ,0], [DOVE]);
-  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, 10, 0 ,0], [HAWK]);
+  drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [CORNER_ROUNDING, 0, 0 ,0], [DOVE]);
+  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, CORNER_ROUNDING, 0 ,0], [HAWK]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, `World Width: ${newGridWidth}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_WIDTH]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, `World Height: ${newGridHeight}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_HEIGHT]);
-  drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Tree Density: ${treeDensity}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 10], [TREE]);
-  drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Apply Conditions`, size, color(255, 255), color(0, 100), applyConditions, [0, 0, 10, 0]);
+  drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Tree Density: ${treeDensity}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, CORNER_ROUNDING], [TREE]);
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Apply Conditions`, size, color(255, 255), color(0, 100), applyConditions, [0, 0, CORNER_ROUNDING, 0]);
 }
 
 function drawMatrix(){
@@ -478,7 +512,7 @@ function drawMatrix(){
   let matrixY = matrixHeight;
   let bufferX = matrixWidth/5;
   let bufferY = matrixHeight/5;
-  let size = min(matrixHeight, matrixWidth)/20;
+  let size = matrixWidth/40;
 
   //draw quadrant background
   fill(240);
@@ -528,18 +562,18 @@ function drawMatrix(){
 
       if (y === 0){
         if (x === 1){
-          corners[0] = 10;
+          corners[0] = CORNER_ROUNDING;
         }
         else if (x === 2){
-          corners[1] = 10;
+          corners[1] = CORNER_ROUNDING;
         }
       }
       else if (y === 1){
         if (x === 1){
-          corners[3] = 10;
+          corners[3] = CORNER_ROUNDING;
         }
         else if (x === 2){
-          corners[2] = 10;
+          corners[2] = CORNER_ROUNDING;
         }
       }
       
@@ -711,7 +745,6 @@ function nextGameState(){
 
     if (gameState >= gameCycle.length){
       entities.pawns = shuffleArray(entities.pawns);
-      // mixPawns();
       fillAvailableTrees();
       data.day++;
       gameState = 0;
@@ -729,29 +762,10 @@ function nextGameState(){
   }
 }
 
-function mixPawns(){
-  let doves = entities.pawns.filter(p => p.strategy === DOVE);
-  let hawks = entities.pawns.filter(p => p.strategy === HAWK);
-  let newPawns = [];
-
-  while (doves.length > 0 && hawks.length > 0) {
-    newPawns.push(doves.pop());
-    newPawns.push(hawks.pop());
-  }
-
-  // Append the remaining pawns (only one type will be left)
-  newPawns = newPawns.concat(doves).concat(hawks);
-
-  entities.pawns = newPawns;
-}
-
 function findTrees(){
   for (let pawn of entities.pawns){
     pawn.findDestination();
     pawn.move();
-    // for (let tree of entities.trees){
-    //   tree.updatePawns();
-    // }
   }
   
   if (!foodGiven){
