@@ -76,8 +76,10 @@ function preload(){
 }
                     
 function setup() {
+  //setup window canvas
   createCanvas(windowWidth, windowHeight);
-  
+
+  //setup world grid
   newGridHeight = floor(newGridWidth * (height/2/width));
   applyConditions();
 }
@@ -85,22 +87,29 @@ function setup() {
 function draw() {
   
   let displayParameter;
-  
+
+  //draw the world grid, buttons for user and update the world
   drawWorld();
   drawButtons();
   updateWorld();
   updateData();
-  
+
+  //update and draw the info display
   if (displayState === SHOW_MY_GRAPH){
     displayParameter = data.history;
   }
   display[displayState](displayParameter);
+
+  //run the current game state
   gameCycle[gameState]();
-  
+
+  //automatically progress the game if autoplay is on
   if (autoPlay){
     nextGameState();
   }
 }
+
+//generic class for either pawns or trees
 class Entity {
 
   constructor (x, y){
@@ -203,6 +212,7 @@ class Tree extends Entity{
 }
 
 function keyPressed(){
+  //move to the next game state when any key is pressed
   nextGameState();
 }
 
@@ -252,6 +262,9 @@ function mouseReleased(){
 }
 
 function drawButtons(){
+  //draws the button for user to use to change how the game operates
+
+  //create position variables for the quadrant
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = 0;
@@ -260,20 +273,25 @@ function drawButtons(){
   let bufferY = areaHeight/5;
   let size = min(areaHeight, areaWidth)/20;
 
+  //draw and outline the quadrant
   fill(240);
   stroke(0);
   strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
+  //update position variables for the buttons within the quadrant
   areaWidth -= bufferX*2;
   areaX += bufferX;
   areaHeight -= bufferY*2;
   areaY += bufferY;
   let buttonWidth = areaWidth/2;
   let buttonHeight = areaHeight/4;
+
+  //find if autoplay or skip movement are enabled
   let autoPlayTag = autoPlay ? "On" : "Off";
   let skipMovementTag = skipMovement ? "On" : "Off";
 
+  //draw each button in their places
   drawButton(areaX, areaY, buttonWidth, buttonHeight, "Graph", size, color(255, 255), color(0, 100), changeDisplay, [10, 0, 0 ,0], [SHOW_MY_GRAPH]);
   drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "Reward Matrix", size, color(255, 255), color(0, 100), changeDisplay, [0, 10, 0 ,0], [SHOW_MATRIX]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "Change Conditions", size, color(255, 255), color(0, 100), changeDisplay, [0, 0, 0, 0], [CHANGE_CONDITIONS]);
@@ -286,35 +304,41 @@ function drawButtons(){
 }
 
 function toggleAutoPlay(){
+  //toggle autoplay on or off
   autoPlay = !autoPlay;
 }
 
 function toggleSkipMovement(){
+  //toggle skip movement on or off
   skipMovement = !skipMovement;
 }
 
 function changeDisplay(newDisplay){
+  //update what information is displayed 
   displayState = newDisplay;
 }
 
 function changeConditions(condition){
-  let num = Number(prompt('Enter the new value'));
+  //changes a specifiic initial condition of the simulation
+  
+  let num = Number(prompt('Enter the new value')); //get a number from the user
 
+  //user input must be a number
   if (num || num === 0){
-    if (condition === DOVE){
+    if (condition === DOVE){ //update the initial dove count with a minimum of 0
       initialDoves = round(max(0, num));
     }
-    else if (condition === HAWK){
+    else if (condition === HAWK){ //update the initial hawk count with a minimum of 0
       initialHawks = round(max(0, num));
     }
-    else if (condition === TREE){
+    else if (condition === TREE){ //update the tree density that must be between 0 and 1
       treeDensity = round(max(0, min(1, num)), 2);
     }
-    else if (condition === GRID_WIDTH){
+    else if (condition === GRID_WIDTH){ //update the grid width with a minimum of 4 and change the grid height accordingly
       newGridWidth = round(max(4, num));
       newGridHeight = floor(newGridWidth * (height/2/width));
     }
-    else if (condition === GRID_HEIGHT){
+    else if (condition === GRID_HEIGHT){ //update the grid height with a minimum of 4 and change the grid width accordingly
       newGridHeight = round(max(4, num));
       newGridWidth = floor(newGridHeight * (width/(height/2)));
     }
@@ -322,6 +346,9 @@ function changeConditions(condition){
 }
 
 function applyConditions(){
+  //resets the simulation with the current starting conditions
+
+  //reset all variables
   data.day = 0;
   data.history.doves = [];
   data.history.hawks = [];
@@ -331,18 +358,24 @@ function applyConditions(){
   foodGiven = false;
   foodUsed = true;
 
+  //update the grid size
   gridWidth = newGridWidth;
   gridHeight = newGridHeight;
 
+  //update the cell size based on the grid size
   cellSize = min(width/gridWidth, height/2/gridHeight);
 
+  //update the tree count based on the tree density
   treeCount = floor((gridWidth-2) * (gridHeight-2) * treeDensity);
 
+  //reset the world
   world = generateEmptyWorld(gridWidth, gridHeight);
 
+  //populate the world with trees
   placeTrees();
   fillAvailableTrees();
-
+  
+  //populate the world with pawns
   for (let i = 0; i < initialDoves; i++){
     entities.pawns.push(createPawn(DOVE));
   }
@@ -353,6 +386,7 @@ function applyConditions(){
 }
 
 function drawExamples(){
+  //draws the examples of different simulation variants
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
@@ -377,6 +411,7 @@ function drawExamples(){
 }
 
 function drawGameRules(){
+  //displays the game rules
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
@@ -399,6 +434,9 @@ function drawGameRules(){
 }
 
 function drawChangeConditions(){
+  //draws the buttons to change to initial conditions of the game
+
+  //create the position varibles for the quadrant
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
@@ -412,7 +450,8 @@ function drawChangeConditions(){
   stroke(0);
   strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
-
+  
+  //update the position variables for the buttons
   areaWidth -= bufferX*2;
   areaX += bufferX;
   areaHeight -= bufferY*2;
@@ -420,16 +459,19 @@ function drawChangeConditions(){
   let buttonWidth = areaWidth/2;
   let buttonHeight = areaHeight/3;
 
+  //draw each button in their place
   drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [10, 0, 0 ,0], [DOVE]);
   drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, 10, 0 ,0], [HAWK]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, `World Width: ${newGridWidth}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_WIDTH]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, `World Height: ${newGridHeight}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_HEIGHT]);
   drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Tree Density: ${treeDensity}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 10], [TREE]);
   drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, `Apply Conditions`, size, color(255, 255), color(0, 100), applyConditions, [0, 0, 10, 0]);
-
 }
 
 function drawMatrix(){
+  //draws the reward matrix display
+
+  //create the position variables for the quadrant
   let matrixWidth = width/2;
   let matrixHeight = height/2;
   let matrixX = matrixWidth;
@@ -444,12 +486,14 @@ function drawMatrix(){
   strokeWeight(2);
   rect(matrixX, matrixY, matrixWidth, matrixHeight);
 
+  //write to the bottom left of the quadrant
   fill(0);
   strokeWeight(0);
   textSize(size);
   textAlign(LEFT, BOTTOM);
   text("Rewards Shown For Pawn on the Left", matrixX, matrixY + matrixHeight);
 
+  //update position variables for the buttons
   matrixWidth -= bufferX*2;
   matrixX += bufferX;
   matrixHeight -= bufferY*2;
