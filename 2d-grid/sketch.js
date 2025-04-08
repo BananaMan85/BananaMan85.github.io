@@ -56,11 +56,14 @@ let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawGa
 let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
 let treeMap = new Map();
+let pawnMap = new Map();
 
 let fullTree;
 let halfTree;
 let emptyTree;
 let grass;
+let doveImage;
+let hawkImage;
 
 //results for each type of encounter
 //                Alone DOVE HAWK
@@ -73,6 +76,8 @@ function preload(){
   halfTree = loadImage("images/half-apple-tree.jpg");
   emptyTree = loadImage("images/tree.jpg");
   grass = loadImage("images/grass.jpg");
+  doveImage = loadImage("images/dove.jpg");
+  hawkImage = loadImage("images/hawk.jpg");
 }
                     
 function setup() {
@@ -86,16 +91,16 @@ function draw() {
   background(220);
   
   let displayParameter;
-  if (displayState === SHOW_MY_GRAPH){
-    displayParameter = data.history;
-  }
   
-  display[displayState](displayParameter);
   drawWorld();
   drawButtons();
   updateWorld();
   updateData();
   
+  if (displayState === SHOW_MY_GRAPH){
+    displayParameter = data.history;
+  }
+  display[displayState](displayParameter);
   gameCycle[gameState]();
   
   if (autoPlay){
@@ -312,7 +317,7 @@ function changeDisplay(newDisplay){
 function changeConditions(condition){
   let num = Number(prompt('Enter the new value'));
 
-  if (num){
+  if (num || num === 0){
     if (condition === DOVE){
       initialDoves = round(max(0, num));
     }
@@ -762,7 +767,7 @@ function createPawn(strategy){
 }
 
 function placeTrees(){
-  treeMap = new Map();
+  treeMap.clear();
   let availablePositions = [];
 
   for (let x = 1; x < gridWidth - 1; x++){
@@ -814,37 +819,51 @@ function generateEmptyWorld(width, height){
 }
 
 function drawWorld(xOffset = 0, yOffset = 0){
-  for (let y = 0; y < world.length; y++){
-    yCoord = y * cellSize;
-    for (let x = 0; x < world[y].length; x++){
-      xCoord = x * cellSize;
+  for (let y = 0; y <= world.length; y++){
+    let yCoord = y * cellSize;
+    for (let x = world[0].length; x >= 0; x--){
+      let xCoord = x * cellSize;
 
+      imageMode(CORNER);
       image(grass, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
 
-      if (world[y][x].includes('tree')){
-        let tree = treeMap.get(`${x}, ${y}`);
-        if (tree.food === 'empty'){
-          image(emptyTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+      if (y < world.length && x < world[y].length){
+        if (world[y][x].includes('tree')){
+          let tree = treeMap.get(`${x}, ${y}`);
+          if (tree.food === 'empty'){
+            image(emptyTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+          }
+          else if (tree.food === 'half'){
+            image(halfTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+          }
+          else if (tree.food === 'full'){
+            image(fullTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+          }
         }
-        else if (tree.food === 'half'){
-          image(halfTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
+        if (world[y][x].includes('pawn')){
+          let pawns = pawnMap.get(`${x}, ${y}`);
+          let doves = pawns.filter(pawn => pawn.strategy === DOVE);
+          let hawks = pawns.filter(pawn => pawn.strategy === HAWK);
+          let counter = 0;
+
+          imageMode(CENTER);
+          for (let dove of doves){
+            image(doveImage, xCoord + xOffset + ((counter + 0.5) / pawns.length) * cellSize, yCoord + yOffset + cellSize * (3/4), cellSize/4, cellSize/4);
+            counter++;
+          }
+          for (let hawk of hawks){
+            image(hawkImage, xCoord + xOffset + ((counter + 0.5) / pawns.length) * cellSize, yCoord + yOffset + cellSize * (3/4), cellSize/4, cellSize/4);
+            counter++;
+          }
         }
-        else if (tree.food === 'full'){
-          image(fullTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
-        }
-      }
-      else if (world[y][x].includes('pawn')){
-        fill("black");
-        textAlign(CENTER,CENTER);
-        textSize(cellSize/2);
-        strokeWeight(0);
-        text('P', xCoord + xOffset + cellSize/2, yCoord + yOffset + cellSize/2);
       }
     }
   }
 }
 
 function updateWorld(){
+  pawnMap.clear();
+
   for (let y = 0; y < world.length; y++){
     for (let x = 0; x < world[y].length; x++){
       world[y][x] = [];
@@ -854,6 +873,13 @@ function updateWorld(){
   for (let pawn of entities.pawns){
     let x = pawn.x;
     let y = pawn.y;
+
+    let key = `${x}, ${y}`;
+
+    if (!pawnMap.has(key)){
+      pawnMap.set(key, []);
+    }
+    pawnMap.get(key).push(pawn);
 
     world[y][x].push('pawn');
   }
