@@ -1,5 +1,5 @@
 // 2d grid assignment || Evolutionary Game Theory
-// William Sherwood
+// 
 // Date
 //
 // Extra for Experts:
@@ -30,6 +30,7 @@ const SHOW_MATRIX = 1;
 const CHANGE_CONDITIONS = 2;
 const SHOW_EXAMPLES = 3;
 const SHOW_GAME_RULES = 4;
+const SHOW_EXAMPLE_GRAPH = 5;
 const DOVE = 0;
 const HAWK = 1;
 const TREE = -1;
@@ -53,11 +54,12 @@ let newGridWidth = 24;
 let newGridHeight = 7;
 let gameCycle = [findTrees, goHome, newGeneration];
 let gameState = 2;
-let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawGameRules];
+let display = [drawGraph, drawMatrix, drawChangeConditions, drawExamples, drawGameRules, drawGraph];
 let displayState = CHANGE_CONDITIONS;
 let clickReleased = true;
 let treeMap = new Map();
 let pawnMap = new Map();
+let example;
 
 let fullTree, halfTree, emptyTree, grass, doveImage, hawkImage; //variables to hold images
 
@@ -98,6 +100,10 @@ function draw() {
   //update and draw the info display
   if (displayState === SHOW_MY_GRAPH){
     displayParameter = data.history;
+  }
+  else if (displayState === SHOW_EXAMPLE_GRAPH){
+    displayParameter = example.history;
+    rewardMatrix = example.matrix;
   }
   display[displayState](displayParameter);
 
@@ -319,6 +325,12 @@ function changeDisplay(newDisplay){
   displayState = newDisplay;
 }
 
+function useExample(file){
+  example = loadJSON(`examples/${file}.json`);
+
+  displayState = SHOW_EXAMPLE_GRAPH;
+}
+
 function changeConditions(condition){
   //changes a specifiic initial condition of the simulation
   
@@ -394,7 +406,7 @@ function drawExamples(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = areaWidth/40;
+  let size = areaWidth/80;
 
   //draw quadrant background
   fill(240);
@@ -409,6 +421,54 @@ function drawExamples(){
   let buttonWidth = areaWidth/3;
   let buttonHeight = areaHeight/3;
 
+  drawButton(areaX, areaY, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [CORNER_ROUNDING, 0, 0 ,0], ["down-down"]);
+  drawArrow(areaX + buttonWidth * (1/3), areaY + buttonHeight * (1/5), areaX + buttonWidth * (1/3), areaY + buttonHeight * (4/5), size);
+  drawArrow(areaX + buttonWidth * (2/3), areaY + buttonHeight * (1/5), areaX + buttonWidth * (2/3), areaY + buttonHeight * (4/5), size);
+
+  drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0 ,0], ["down-none"]);
+  drawArrow(areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (1/5), areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (4/5), size);
+  strokeWeight(2);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8);
+
+  drawButton(areaX + buttonWidth*2, areaY, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, CORNER_ROUNDING, 0 ,0], ["down-up"]);
+  drawArrow(areaX + buttonWidth * (1/3) + buttonWidth*2, areaY + buttonHeight * (1/5), areaX + buttonWidth * (1/3) + buttonWidth*2, areaY + buttonHeight * (4/5), size);
+  drawArrow(areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight * (4/5), areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight * (1/5), size);
+
+  drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, 0], ["none-down"]);
+  strokeWeight(2);
+  line(areaX + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
+  line(areaX + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight, areaX + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight);
+  drawArrow(areaX + buttonWidth * (2/3), areaY + buttonHeight + buttonHeight * (1/5), areaX + buttonWidth * (2/3), areaY + buttonHeight + buttonHeight * (4/5), size);
+  
+  drawButton(areaX + buttonWidth, areaY + buttonHeight, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, 0], ["none-none"]);
+  strokeWeight(2);
+  line(areaX + buttonWidth + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
+  line(areaX + buttonWidth + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight, areaX + buttonWidth + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight);
+  
+  
+  drawButton(areaX + buttonWidth*2, areaY + buttonHeight, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0 ,0], ["none-up"]);
+  strokeWeight(2);
+  line(areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
+  line(areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight);
+  drawArrow(areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight + buttonHeight * (4/5), areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight + buttonHeight * (1/5), size);
+
+  drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, CORNER_ROUNDING], ["up-down"]);
+  drawArrow(areaX + buttonWidth * (1/3), areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (1/3), areaY + buttonHeight * (1/5) + buttonHeight*2, size);
+  drawArrow(areaX + buttonWidth * (2/3), areaY + buttonHeight * (1/5) + buttonHeight*2, areaX + buttonWidth * (2/3), areaY + buttonHeight * (4/5) + buttonHeight*2, size);
+
+
+  drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, 0], ["up-none"]);
+  drawArrow(areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (1/5) + buttonHeight*2, size);
+  strokeWeight(2);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight*2, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight*2);
+  line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight*2, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight*2);
+
+  drawButton(areaX + buttonWidth*2, areaY + buttonHeight*2, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, CORNER_ROUNDING ,0], ["up-up"]);
+  drawArrow(areaX + buttonWidth * (1/3) + buttonWidth*2, areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (1/3) + buttonWidth*2, areaY + buttonHeight * (1/5) + buttonHeight*2, size);
+  drawArrow(areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (2/3) + buttonWidth*2, areaY + buttonHeight * (1/5) + buttonHeight*2, size);
 }
 
 function drawGameRules(){
@@ -449,7 +509,7 @@ function drawGameRules(){
     \n-Each pawn only lives for one day
     \n(See Reward Matrix for specific values)`,
   areaX + areaWidth/2 + size, areaY + areaHeight/2, areaWidth, areaHeight);
-  pop();
+  pop(); 
 
   //draw images
   let treeSize = size*5;
@@ -525,7 +585,7 @@ function drawMatrix(){
   strokeWeight(0);
   textSize(size);
   textAlign(LEFT, BOTTOM);
-  text("Rewards Shown For Pawn on the Left", matrixX, matrixY + matrixHeight);
+  text("Rewards Shown For Pawn on the Left (Click to Change Values)", matrixX, matrixY + matrixHeight);
 
   //update position variables for the buttons
   matrixWidth -= bufferX*2;
@@ -1009,4 +1069,13 @@ function newGeneration(){
       tree.food = 'full';
     }
   }
+}
+
+function createSave(){
+  let save = {
+    history: data.history,
+    matrix: rewardMatrix,
+  }
+
+  saveJSON(save, 'example.json');
 }
