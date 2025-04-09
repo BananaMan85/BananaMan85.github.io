@@ -1,9 +1,9 @@
 // 2d grid assignment || Evolutionary Game Theory
-// 
-// Date
+// William Sherwood
+// April 10, 2025
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// This project uses classes, 
 
 //inspiration:
 //https://www.youtube.com/watch?v=TZfh8hpJIxo
@@ -103,7 +103,7 @@ function draw() {
   }
   else if (displayState === SHOW_EXAMPLE_GRAPH){
     displayParameter = example.history;
-    rewardMatrix = example.matrix;
+    // rewardMatrix = example.matrix;
   }
   display[displayState](displayParameter);
 
@@ -278,7 +278,7 @@ function drawButtons(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = areaWidth/40;
+  let size = min(areaWidth/40, areaHeight/(40*(height/width)));
 
   //draw and outline the quadrant
   fill(240);
@@ -326,9 +326,14 @@ function changeDisplay(newDisplay){
 }
 
 function useExample(file){
-  example = loadJSON(`examples/${file}.json`);
+  example = loadJSON(`examples/${file}.json`, applyExample);
 
+  // displayState = SHOW_EXAMPLE_GRAPH;
+}
+
+function applyExample(){
   displayState = SHOW_EXAMPLE_GRAPH;
+  rewardMatrix = example.matrix;
 }
 
 function changeConditions(condition){
@@ -406,7 +411,7 @@ function drawExamples(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = areaWidth/80;
+  let size = min(areaWidth/80, areaHeight/(80*(height/width)));
 
   //draw quadrant background
   fill(240);
@@ -448,7 +453,6 @@ function drawExamples(){
   line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
   line(areaX + buttonWidth*2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 + buttonHeight/8 + buttonHeight);
   
-  
   drawButton(areaX + buttonWidth*2, areaY + buttonHeight, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0 ,0], ["none-up"]);
   strokeWeight(2);
   line(areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 - buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight, areaX + buttonWidth*2 + buttonWidth/2 - buttonWidth/4 + buttonWidth/8, areaY + buttonHeight/2 - buttonHeight/8 + buttonHeight);
@@ -458,7 +462,6 @@ function drawExamples(){
   drawButton(areaX, areaY + buttonHeight*2, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, CORNER_ROUNDING], ["up-down"]);
   drawArrow(areaX + buttonWidth * (1/3), areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (1/3), areaY + buttonHeight * (1/5) + buttonHeight*2, size);
   drawArrow(areaX + buttonWidth * (2/3), areaY + buttonHeight * (1/5) + buttonHeight*2, areaX + buttonWidth * (2/3), areaY + buttonHeight * (4/5) + buttonHeight*2, size);
-
 
   drawButton(areaX + buttonWidth, areaY + buttonHeight*2, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [0, 0, 0, 0], ["up-none"]);
   drawArrow(areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (4/5) + buttonHeight*2, areaX + buttonWidth * (1/3) + buttonWidth, areaY + buttonHeight * (1/5) + buttonHeight*2, size);
@@ -479,7 +482,7 @@ function drawGameRules(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = areaWidth/40;
+  let size = min(areaWidth/40, areaHeight/(40*(height/width)));
 
   //draw quadrant background
   fill(240);
@@ -507,7 +510,8 @@ function drawGameRules(){
     \n-A pawn creates 1 offspring per food
     \n-Remaining food converts to a probability for another offspring
     \n-Each pawn only lives for one day
-    \n(See Reward Matrix for specific values)`,
+    \n(See Reward Matrix for specific values)
+    \n\n Press any key to progress game`,
   areaX + areaWidth/2 + size, areaY + areaHeight/2, areaWidth, areaHeight);
   pop(); 
 
@@ -537,7 +541,7 @@ function drawChangeConditions(){
   let areaY = areaHeight;
   let bufferX = areaWidth/5;
   let bufferY = areaHeight/5;
-  let size = areaWidth/40;
+  let size = min(areaWidth/40, areaHeight/(40*(height/width)));
 
   //draw quadrant background
   fill(240);
@@ -572,7 +576,7 @@ function drawMatrix(){
   let matrixY = matrixHeight;
   let bufferX = matrixWidth/5;
   let bufferY = matrixHeight/5;
-  let size = matrixWidth/40;
+  let size = min(matrixWidth/40, matrixHeight/(40*(height/width)));
 
   //draw quadrant background
   fill(240);
@@ -594,6 +598,7 @@ function drawMatrix(){
   matrixY += bufferY;
   let cellWidth = matrixWidth/2;
   let cellHeight = matrixHeight/2;
+  let hawkDoveGame = rewardMatrix[0][1] < rewardMatrix[1][1] && rewardMatrix[0][2] > rewardMatrix[1][2];
 
   for (let y = 0; y < rewardMatrix.length; y++){
 
@@ -620,6 +625,7 @@ function drawMatrix(){
       let h = cellHeight;
       let corners = [0, 0, 0, 0];
 
+      //draw the reward matrix values in buttons
       if (y === 0){
         if (x === 1){
           corners[0] = CORNER_ROUNDING;
@@ -639,8 +645,24 @@ function drawMatrix(){
       
       drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, corners, [matrixX, matrixY, matrixWidth, matrixHeight]);
     }
+
+    if (hawkDoveGame){
+      let doveDoveReward = rewardMatrix[0][1];
+      let doveHawkReward = rewardMatrix[0][2];
+      let hawkDoveReward = rewardMatrix[1][1];
+      let hawkHawkReward = rewardMatrix[1][2];
+
+      //Calculate the expected proportion of doves in equilibrium based on the following system of equations:
+      // dovePercentage * doveDoveReward + (1-dovePercentage) * doveHawkReward = dovePercentage * hawkDoveReward + (1-dovePercentage) * hawkHawkReward;
+      let dovePercentage = round((hawkHawkReward - doveHawkReward) / (doveDoveReward + hawkHawkReward - doveHawkReward - hawkDoveReward) * 100, 2);
+      let hawkPercentage = 100 - dovePercentage;
+
+      textAlign(CENTER, TOP);
+      text(`Expected Doves: ${dovePercentage}% \nExpected Hawks: ${hawkPercentage}%`, matrixX + matrixWidth/2, matrixY + matrixHeight + size);
+    }
   }
   
+  //draw nash equilibrium indicators (arrows pointing towards the best strategy given the opponents strategy)
   for (let x = 1; x < rewardMatrix[0].length; x++){
     let x1 = matrixX + cellWidth * (x-1);
     let w = cellWidth;
@@ -756,7 +778,7 @@ function changeRewardMatrix(x, y, w, h){
   let rewardLocation = [];
   let num = Number(prompt('Enter the new value'));
 
-  if (num){
+  if (num || num === 0){
     if (mouseX > x && mouseX < x + w/2){
       if (mouseY > y && mouseY < y + h/2){
         rewardLocation = [1, 0];
@@ -1075,7 +1097,7 @@ function createSave(){
   let save = {
     history: data.history,
     matrix: rewardMatrix,
-  }
+  };
 
   saveJSON(save, 'example.json');
 }
