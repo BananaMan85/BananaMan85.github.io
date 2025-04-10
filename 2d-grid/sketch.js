@@ -1,13 +1,14 @@
-// 2d grid assignment || Evolutionary Game Theory
+// 2d grid assignment || Evolutionary Game Theory Simulation
 // William Sherwood
 // April 10, 2025
 //
 // Extra for Experts:
-// This project uses classes, 
+// This project uses classes and custom shapes
 
 //inspiration:
 //https://www.youtube.com/watch?v=TZfh8hpJIxo
 
+//initialize objects
 let entities = {
   trees: [],
   pawns: [],
@@ -24,6 +25,8 @@ let data = {
     hawks: [],
   },
 };
+
+//initialize constants
 const MAX_PAWNS_PER_TREE = 2;
 const SHOW_MY_GRAPH = 0;
 const SHOW_MATRIX = 1;
@@ -37,6 +40,8 @@ const TREE = -1;
 const GRID_WIDTH = -2;
 const GRID_HEIGHT = -3;
 const CORNER_ROUNDING = 10;
+
+//initialize variables
 let world = [];
 let availableTrees = [];
 let autoPlay = false;
@@ -44,7 +49,7 @@ let skipMovement = false;
 let initialDoves = 5;
 let initialHawks = 5;
 let treeCount = 1;
-let treeDensity = 1/4; //amount of the board that will be populated by trees
+let treeDensity = 2/4; //amount of the board that will be populated by trees
 let pawnsInPlace = false;
 let foodGiven = true;
 let foodUsed = false;
@@ -60,7 +65,6 @@ let clickReleased = true;
 let treeMap = new Map();
 let pawnMap = new Map();
 let example;
-
 let fullTree, halfTree, emptyTree, grass, doveImage, hawkImage; //variables to hold images
 
 //results for each type of encounter
@@ -70,6 +74,8 @@ let rewardMatrix = [[2, 7/4, 2/4], //DOVE
 
 
 function preload(){
+
+  //load all the images
   fullTree = loadImage("images/apple-tree.jpg");
   halfTree = loadImage("images/half-apple-tree.jpg");
   emptyTree = loadImage("images/tree.jpg");
@@ -88,24 +94,13 @@ function setup() {
 }
 
 function draw() {
-  
-  let displayParameter;
 
   //draw the world grid, buttons for user and update the world
   drawWorld();
   drawButtons();
   updateWorld();
   updateData();
-
-  //update and draw the info display
-  if (displayState === SHOW_MY_GRAPH){
-    displayParameter = data.history;
-  }
-  else if (displayState === SHOW_EXAMPLE_GRAPH){
-    displayParameter = example.history;
-    // rewardMatrix = example.matrix;
-  }
-  display[displayState](displayParameter);
+  displayInformation();
 
   //run the current game state
   gameCycle[gameState]();
@@ -127,6 +122,7 @@ class Entity {
   }
 }
 
+//pawns that are either a dove or hawk
 class Pawn extends Entity{
 
   constructor (x, y, strategy){
@@ -140,11 +136,17 @@ class Pawn extends Entity{
   }
 
   findDestination(){
+    //sets the current destination of the pawn
+
     if (this.destination[0] === this.homeX && this.destination[1] === this.homeY || this.die){
+
+      //if the pawn couldn't find a tree send it home
       if (this.die){
         this.destination = [this.homeX, this.homeY];
         return;
       }
+      
+      //if there are no more trees mark the pawn to die
       if (availableTrees.length === 0){
         this.die = true;
         return;
@@ -158,6 +160,8 @@ class Pawn extends Entity{
   }
 
   move(){
+    //moves the pawn towards its destination
+
     let distX;
     let distY;
 
@@ -172,6 +176,7 @@ class Pawn extends Entity{
       distY = this.destination[1] - this.y;
     }
     
+    //stop if the pawn is already at its destination
     if (distX === 0 && distY === 0){
       if (!this.die){
         this.atDestination = true;
@@ -182,11 +187,14 @@ class Pawn extends Entity{
       }
     }
 
+    //teleport directly to the destination if skip movement is on
     if (skipMovement){
       this.x = this.destination[0];
       this.y = this.destination[1];
     }
+
     else if (!skipMovement){
+      //move towards the destination by one tile
       if (distX !== 0 || distY !== 0){
         if (abs(distX) > abs(distY)){
           if (distX > 0){
@@ -209,6 +217,7 @@ class Pawn extends Entity{
   }
 }
 
+//tree entity for pawns to go to for food
 class Tree extends Entity{
 
   constructor (x, y){
@@ -219,17 +228,20 @@ class Tree extends Entity{
 }
 
 function keyPressed(){
-  //move to the next game state when any key is pressed
+  //moves to the next game state when any key is pressed
   nextGameState();
 }
 
 function drawArrow(x1, y1, x2, y2, size = 10){
+  //draws an arrow
+
   stroke(0, 255);
   strokeWeight(2);
   fill(0, 255);
 
-  let angle = atan2(y2 - y1, x2 - x1);
+  let angle = atan2(y2 - y1, x2 - x1); //find the direction that the arrow is pointing
 
+  //find the points for the arrowhead triangle
   let arrowX1 = x2 - size * cos(angle - PI / 6);
   let arrowY1 = y2 - size * sin(angle - PI / 6);
   let arrowX2 = x2 - size * cos(angle + PI / 6);
@@ -245,11 +257,13 @@ function drawButton(x, y, w, h, label, size, color1, color2, action, corners = [
 
   let isHovered = mouseX > x && mouseX < x + w && mouseY > y && mouseY < y + h;
 
+  //draw the button background
   fill(isHovered ? color2 : color1); //change colour when hovered
   stroke(0, 255);
   strokeWeight(2);
   rect(x, y, w, h, corners[0], corners[1], corners[2], corners[3]);
 
+  //write the button label
   fill(0);
   textAlign(CENTER, CENTER);
   textSize(size);
@@ -280,7 +294,7 @@ function drawButtons(){
   let bufferY = areaHeight/5;
   let size = min(areaWidth/40, areaHeight/(40*(height/width)));
 
-  //draw and outline the quadrant
+  //draw quadrant background
   fill(240);
   stroke(0);
   strokeWeight(2);
@@ -310,6 +324,21 @@ function drawButtons(){
 
 }
 
+function displayInformation(){
+  //draws the current info display
+
+  let displayParameter;
+
+  //update and draw the info display
+  if (displayState === SHOW_MY_GRAPH){
+    displayParameter = data.history;
+  }
+  else if (displayState === SHOW_EXAMPLE_GRAPH){
+    displayParameter = example.history;
+  }
+  display[displayState](displayParameter);
+}
+
 function toggleAutoPlay(){
   //toggle autoplay on or off
   autoPlay = !autoPlay;
@@ -321,17 +350,17 @@ function toggleSkipMovement(){
 }
 
 function changeDisplay(newDisplay){
-  //update what information is displayed 
+  //updates what information is displayed 
   displayState = newDisplay;
 }
 
 function useExample(file){
+  //loads an example file
   example = loadJSON(`examples/${file}.json`, applyExample);
-
-  // displayState = SHOW_EXAMPLE_GRAPH;
 }
 
 function applyExample(){
+  //applies the data from the example file
   displayState = SHOW_EXAMPLE_GRAPH;
   rewardMatrix = example.matrix;
 }
@@ -405,6 +434,8 @@ function applyConditions(){
 
 function drawExamples(){
   //draws the examples of different simulation variants
+
+  //create the position varibles for the quadrant
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
@@ -419,6 +450,7 @@ function drawExamples(){
   strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
+  //update the position variables for the buttons
   areaWidth -= bufferX*2;
   areaX += bufferX;
   areaHeight -= bufferY*2;
@@ -426,6 +458,7 @@ function drawExamples(){
   let buttonWidth = areaWidth/3;
   let buttonHeight = areaHeight/3;
 
+  //draw each example button with the nash equilibrium arrow indicators   (I know this is an absolute mess)
   drawButton(areaX, areaY, buttonWidth, buttonHeight, "", size, color(255, 255), color(0, 100), useExample, [CORNER_ROUNDING, 0, 0 ,0], ["down-down"]);
   drawArrow(areaX + buttonWidth * (1/3), areaY + buttonHeight * (1/5), areaX + buttonWidth * (1/3), areaY + buttonHeight * (4/5), size);
   drawArrow(areaX + buttonWidth * (2/3), areaY + buttonHeight * (1/5), areaX + buttonWidth * (2/3), areaY + buttonHeight * (4/5), size);
@@ -476,12 +509,12 @@ function drawExamples(){
 
 function drawGameRules(){
   //displays the game rules
+
+  //create the position varibles for the quadrant
   let areaWidth = width/2;
   let areaHeight = height/2;
   let areaX = areaWidth;
   let areaY = areaHeight;
-  let bufferX = areaWidth/5;
-  let bufferY = areaHeight/5;
   let size = min(areaWidth/40, areaHeight/(40*(height/width)));
 
   //draw quadrant background
@@ -490,11 +523,6 @@ function drawGameRules(){
   strokeWeight(2);
   rect(areaX, areaY, areaWidth, areaHeight);
 
-  // areaWidth -= bufferX*2;
-  // areaX += bufferX;
-  // areaHeight -= bufferY*2;
-  // areaY += bufferY;
-  
   //write game rules
   push();
   fill(0);
@@ -511,7 +539,7 @@ function drawGameRules(){
     \n-Remaining food converts to a probability for another offspring
     \n-Each pawn only lives for one day
     \n(See Reward Matrix for specific values)
-    \n\n Press any key to progress game`,
+    \n\nPress any key to progress game`,
   areaX + areaWidth/2 + size, areaY + areaHeight/2, areaWidth, areaHeight);
   pop(); 
 
@@ -557,7 +585,7 @@ function drawChangeConditions(){
   let buttonWidth = areaWidth/2;
   let buttonHeight = areaHeight/3;
 
-  //draw each button in their place
+  //draw each button in its place
   drawButton(areaX, areaY, buttonWidth, buttonHeight, `Initial Doves: ${initialDoves}`, size, color(255, 255), color(0, 100), changeConditions, [CORNER_ROUNDING, 0, 0 ,0], [DOVE]);
   drawButton(areaX + buttonWidth, areaY, buttonWidth, buttonHeight, `Initial Hawks: ${initialHawks}`, size, color(255, 255), color(0, 100), changeConditions, [0, CORNER_ROUNDING, 0 ,0], [HAWK]);
   drawButton(areaX, areaY + buttonHeight, buttonWidth, buttonHeight, `World Width: ${newGridWidth}`, size, color(255, 255), color(0, 100), changeConditions, [0, 0, 0, 0], [GRID_WIDTH]);
@@ -598,10 +626,11 @@ function drawMatrix(){
   matrixY += bufferY;
   let cellWidth = matrixWidth/2;
   let cellHeight = matrixHeight/2;
-  let hawkDoveGame = rewardMatrix[0][1] < rewardMatrix[1][1] && rewardMatrix[0][2] > rewardMatrix[1][2];
+  let hawkDoveGame = rewardMatrix[0][1] < rewardMatrix[1][1] && rewardMatrix[0][2] > rewardMatrix[1][2]; //find if the scenario is hawk-dove game
 
   for (let y = 0; y < rewardMatrix.length; y++){
 
+    //write the names of rows and columns
     let strategy;
     if (y === DOVE){
       strategy = 'Dove';
@@ -619,13 +648,14 @@ function drawMatrix(){
     text(`vs. ${strategy}`, matrixX + cellWidth * y + cellWidth/2, matrixY);
 
     for (let x = 1; x < rewardMatrix[y].length; x++){
+      //find the position of the cell
       let x1 = matrixX + cellWidth * (x-1);
       let y1 = matrixY + cellHeight * y;
       let w = cellWidth;
       let h = cellHeight;
       let corners = [0, 0, 0, 0];
 
-      //draw the reward matrix values in buttons
+      //decide which corner needs to be rounded
       if (y === 0){
         if (x === 1){
           corners[0] = CORNER_ROUNDING;
@@ -642,21 +672,24 @@ function drawMatrix(){
           corners[2] = CORNER_ROUNDING;
         }
       }
-      
+
+      //draw the reward matrix values in buttons
       drawButton(x1, y1, w, h, rewardMatrix[y][x], size, color(255, 255), color(0, 100), changeRewardMatrix, corners, [matrixX, matrixY, matrixWidth, matrixHeight]);
     }
 
+    //show where the equilibrium of doves and hawks is
     if (hawkDoveGame){
       let doveDoveReward = rewardMatrix[0][1];
       let doveHawkReward = rewardMatrix[0][2];
       let hawkDoveReward = rewardMatrix[1][1];
       let hawkHawkReward = rewardMatrix[1][2];
 
-      //Calculate the expected proportion of doves in equilibrium based on the following system of equations:
-      // dovePercentage * doveDoveReward + (1-dovePercentage) * doveHawkReward = dovePercentage * hawkDoveReward + (1-dovePercentage) * hawkHawkReward;
+      //calculate the expected proportion of doves in equilibrium based on the following equation:
+      //dovePercentage * doveDoveReward + (1-dovePercentage) * doveHawkReward = dovePercentage * hawkDoveReward + (1-dovePercentage) * hawkHawkReward;
       let dovePercentage = round((hawkHawkReward - doveHawkReward) / (doveDoveReward + hawkHawkReward - doveHawkReward - hawkDoveReward) * 100, 2);
-      let hawkPercentage = 100 - dovePercentage;
+      let hawkPercentage = round(100 - dovePercentage, 2);
 
+      //write the values below the matrix
       textAlign(CENTER, TOP);
       text(`Expected Doves: ${dovePercentage}% \nExpected Hawks: ${hawkPercentage}%`, matrixX + matrixWidth/2, matrixY + matrixHeight + size);
     }
@@ -683,6 +716,9 @@ function drawMatrix(){
 }
 
 function drawGraph(history){
+  //draws the graph of the data with the percentage of doves and hawks present at each day
+
+  //create the position variables for the quadrant
   let graphWidth = width/2;
   let graphHeight = height/2;
   let graphX = width - graphWidth;
@@ -697,12 +733,13 @@ function drawGraph(history){
   strokeWeight(2);
   rect(graphX, graphY, graphWidth, graphHeight);
 
+  //update position variables for the buttons
   graphWidth -= bufferX*2;
   graphX += bufferX;
   graphHeight -= bufferY*2;
   graphY += bufferY;
 
-  let days = history.doves.length;
+  let days = history.doves.length; //get the total amount of days in the data
 
   if (days >= 2){
     let step = graphWidth / (days-1);
@@ -764,6 +801,7 @@ function drawGraph(history){
     text (days-1, graphX + graphWidth + bufferX/2, graphY + graphHeight);
   }
   else {
+    //when less than 2 days have passed
     textAlign(CENTER, CENTER);
     textSize(lineSize*20);
     fill(0, 255);
@@ -775,37 +813,45 @@ function drawGraph(history){
 }
 
 function changeRewardMatrix(x, y, w, h){
-  let rewardLocation = [];
-  let num = Number(prompt('Enter the new value'));
+  //changes the value of one type of pawn encounter
 
+  let rewardLocation = [];
+  let num = round(Number(prompt('Enter the new value')), 2); //get the new number from the user
+
+  //user input must be a number
   if (num || num === 0){
+
+    //find which cell the user clicked on
     if (mouseX > x && mouseX < x + w/2){
       if (mouseY > y && mouseY < y + h/2){
         rewardLocation = [1, 0];
-        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
       else if (mouseY > y + h/2 && mouseY < y + h){
         rewardLocation = [1, 1];
-        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
     }
     else if (mouseX > x + w/2 && mouseX < x + w){
       if (mouseY > y && mouseY < y + h/2){
         rewardLocation = [2, 0];
-        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
       else if (mouseY > y + h/2 && mouseY < y + h){
         rewardLocation = [2, 1];
-        rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num;
       }
     }
+
+    rewardMatrix[rewardLocation[1]][rewardLocation[0]] = num; //set the cell to the user's input
   }
 }
 
 function updateData(){
+  //updates the data for the current numbers
+
+  //reset old data
   data.pawns = 0;
   data.doves = 0;
   data.hawks = 0;
+
+  //count each pawn
   for (let pawn of entities.pawns){
     data.pawns++;
     if (pawn.strategy === DOVE){
@@ -816,26 +862,32 @@ function updateData(){
     }
   }
 
+  //find the percentage of each type of pawn
   data.pDoves = data.doves/data.pawns;
   data.pHawks = data.hawks/data.pawns;
 }
 
 function nextGameState(){
+  //progesses to the next game state
+
   checkPawnsInPlace();
   if (pawnsInPlace && (foodGiven || foodUsed)){
     gameState++;
 
+    //loop back to the start of the next day
     if (gameState >= gameCycle.length){
-      entities.pawns = shuffleArray(entities.pawns);
-      fillAvailableTrees();
+      entities.pawns = shuffleArray(entities.pawns); //randomize the order of the pawns
+      fillAvailableTrees(); //reset the list of trees that pawns can go to
       data.day++;
       gameState = 0;
       foodGiven = false;
       foodUsed = false;
 
+      //add the population percent of each type of pawn to the history data
       data.history.doves.push(data.pDoves);
       data.history.hawks.push(data.pHawks);
 
+      //make sure all new pawns are set to return to their homes
       for (let pawn of entities.pawns){
         pawn.destination = [pawn.homeX, pawn.homeY];
         pawn.atDestination = false;
@@ -845,20 +897,26 @@ function nextGameState(){
 }
 
 function findTrees(){
+  //moves pawns to their designated trees and assigns them their food
+
+  //find tree and move towards it
   for (let pawn of entities.pawns){
     pawn.findDestination();
     pawn.move();
   }
   
+  //when all pawns get to their assign them food
   if (!foodGiven){
     checkPawnsInPlace();
     if (pawnsInPlace){
-      runLogic();
+      distributeFood();
     }
   }
 }
 
 function createPawn(strategy){
+  //creates either a new dove or hawk at a random location around the edge
+
   let x;
   let y;
 
@@ -890,17 +948,21 @@ function createPawn(strategy){
 }
 
 function placeTrees(){
+  //randomly places trees in the middle of the world
+
   treeMap.clear();
   let availablePositions = [];
 
+  //create an array of every position where a tree can be placed
   for (let x = 1; x < gridWidth - 1; x++){
     for (let y = 1; y < gridHeight - 1; y++){
       availablePositions.push([x, y]);
     }
   }
 
-  availablePositions = shuffleArray(availablePositions);
+  availablePositions = shuffleArray(availablePositions); //randomize the positions array
 
+  //place the trees and add its position to the tree map
   for (let i = 0; i < treeCount && i < availablePositions.length; i++){
     let [treeX, treeY] = availablePositions[i];
     let tree = new Tree(treeX, treeY);
@@ -910,17 +972,23 @@ function placeTrees(){
 }
 
 function fillAvailableTrees(){
+  //creates a list of available trees for pawns to go to
+
   availableTrees = [];
+
+  //add each tree to the array twice
   for (let i = 0; i < MAX_PAWNS_PER_TREE; i++){
     for (let tree of entities.trees){
       availableTrees.push(tree);
     }
   }
 
-  availableTrees = shuffleArray(availableTrees);
+  availableTrees = shuffleArray(availableTrees); //randomize the array
 }
 
 function shuffleArray(array){
+  //randomizes the order of a given array
+
   for (let i = array.length - 1; i > 0; i--){
     let j = floor(random(i+1));
     [array[i], array[j]] = [array[j], array[i]];
@@ -930,6 +998,8 @@ function shuffleArray(array){
 }
 
 function generateEmptyWorld(width, height){
+  //creates an empty 2d array for the game world
+
   let newGrid = [];
   for (let y = 0; y < height; y++){
     newGrid.push([]);
@@ -942,15 +1012,20 @@ function generateEmptyWorld(width, height){
 }
 
 function drawWorld(xOffset = 0, yOffset = 0){
+  //draws the elements of the world
+
   for (let y = 0; y <= world.length; y++){
     let yCoord = y * cellSize;
     for (let x = world[0].length; x >= 0; x--){
       let xCoord = x * cellSize;
 
+      //draw the grass floor extended by one tile in each direction
       imageMode(CORNER);
       image(grass, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
 
       if (y < world.length && x < world[y].length){
+
+        //draw the trees in the world
         if (world[y][x].includes('tree')){
           let tree = treeMap.get(`${x}, ${y}`);
           if (tree.food === 'empty'){
@@ -963,6 +1038,8 @@ function drawWorld(xOffset = 0, yOffset = 0){
             image(fullTree, xCoord + xOffset, yCoord + yOffset, cellSize, cellSize);
           }
         }
+
+        //draw the pawns in the world
         if (world[y][x].includes('pawn')){
           let pawns = pawnMap.get(`${x}, ${y}`);
           let doves = pawns.filter(pawn => pawn.strategy === DOVE);
@@ -985,28 +1062,28 @@ function drawWorld(xOffset = 0, yOffset = 0){
 }
 
 function updateWorld(){
-  pawnMap.clear();
+  //updates where each entity is in the 2d world array
 
-  for (let y = 0; y < world.length; y++){
-    for (let x = 0; x < world[y].length; x++){
-      world[y][x] = [];
-    }
-  }
+  pawnMap.clear(); //reset pawn map
 
+  world = generateEmptyWorld(gridWidth, gridHeight); //reset world 2d grid
+
+  //add each pawn to the world array
   for (let pawn of entities.pawns){
     let x = pawn.x;
     let y = pawn.y;
 
+    //add the pawn to the pawn map
     let key = `${x}, ${y}`;
-
     if (!pawnMap.has(key)){
       pawnMap.set(key, []);
     }
     pawnMap.get(key).push(pawn);
 
-    world[y][x].push('pawn');
+    world[y][x].push('pawn'); 
   }
 
+  //add each tree to the world array
   for (let tree of entities.trees){
     let x = tree.x;
     let y = tree.y;
@@ -1016,6 +1093,8 @@ function updateWorld(){
 }
 
 function checkPawnsInPlace(){
+  //checks if all the pawns have reached their destination
+
   for (let pawn of entities.pawns){
     if (pawn.x !== pawn.destination[0] || pawn.y !== pawn.destination[1]){
       pawnsInPlace = false;
@@ -1026,27 +1105,35 @@ function checkPawnsInPlace(){
   pawnsInPlace = true;
 }
 
-function runLogic(){
+function distributeFood(){
+  //gives each pawn food based on the values in the reward matrix
+
   foodGiven = true;
 
   for (let tree of entities.trees){
+
+    //find which pawns are at the tree
     let pawnsAtTree = entities.pawns.filter(pawn => 
       pawn.destination[0] === tree.x && pawn.destination[1] === tree.y
     );
   
+    //when only one pawn is at the tree
     if (pawnsAtTree.length === 1){
       tree.food = 'half';
       let pawn = pawnsAtTree[0];
       pawn.food = rewardMatrix[pawn.strategy][0];
     }
 
+    //when the tree is full
     else if (pawnsAtTree.length === MAX_PAWNS_PER_TREE){
       let pawn1 = pawnsAtTree[0];
       let pawn2 = pawnsAtTree[1];
 
+      //give each pawn food based on the reward matrix
       pawn1.food = rewardMatrix[pawn1.strategy][pawn2.strategy+1];
       pawn2.food = rewardMatrix[pawn2.strategy][pawn1.strategy+1];
 
+      //change what the tree sprite will look like
       if (pawn1.strategy === DOVE && pawn2.strategy === DOVE){
         tree.food = 'empty';
       }
@@ -1058,15 +1145,18 @@ function runLogic(){
 }
 
 function goHome(){
+  //sends all the pawns back to their home around the edge
+
   for (let pawn of entities.pawns){
     pawn.atDestination = false;
     pawn.destination = [pawn.homeX, pawn.homeY];
     pawn.move();
   }
-  
 }
 
 function newGeneration(){
+  //creates new pawns based on how much food each current pawn has
+
   if (!foodUsed){
     let newPawns = [];
 
@@ -1074,10 +1164,12 @@ function newGeneration(){
       let food = pawn.food;
       let strategy = pawn.strategy;
 
+      //new pawn for each whole amount of food
       for (let i = 0; i < floor(food); i++){
         newPawns.push(createPawn(strategy));
       }
 
+      //chance for a new pawn based on the decimal remainder of food
       if (random() < food - floor(food)){
         newPawns.push(createPawn(strategy));
       }
@@ -1086,18 +1178,11 @@ function newGeneration(){
     entities.pawns = newPawns;
     foodUsed = true;
     foodGiven = false;
+
+    //reset the trees
     for (let tree of entities.trees){
       tree.pawns = 0;
       tree.food = 'full';
     }
   }
-}
-
-function createSave(){
-  let save = {
-    history: data.history,
-    matrix: rewardMatrix,
-  };
-
-  saveJSON(save, 'example.json');
 }
