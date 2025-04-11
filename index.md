@@ -13,9 +13,10 @@
 - [Game of Life](game-of-life)
 - [Character Movement in Grid](character-grid)
 - [Platformer](platformer)
+- [Walker OOP](walker)
 
 # CS30 Projects
-- [Interactive Scene](interactive-scene)
-- [Object Notation](object-notation)
-- [2D Grid](2d-grid)
+- [Archery](interactive-scene)
+- [Blackjack](object-notation)
+- [EGT Simulator](2d-grid)
 - [Major Project](major-project)
