@@ -14,9 +14,9 @@
 - [Character Movement in Grid](character-grid)
 - [Platformer](platformer)
 - [Walker OOP](walker)
+- [Fireworks OOP](fireworks)
 
 # CS30 Projects
 - [Archery](interactive-scene)
 - [Blackjack](object-notation)
 - [EGT Simulator](2d-grid)
-- [Major Project](major-project)
