@@ -17,6 +17,7 @@
 - [Fireworks OOP](fireworks)
 - [Connected Nodes OOP](nodes)
 - [Local Storage](local-storage)
+- [OOP Inheritance](inheritance)
 
 # CS30 Projects
 - [Archery](interactive-scene)
