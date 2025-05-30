@@ -18,6 +18,7 @@
 - [Connected Nodes OOP](nodes)
 - [Local Storage](local-storage)
 - [OOP Inheritance](inheritance)
+- [Sierpinski Triangle](triangles)
 
 # CS30 Projects
 - [Archery](interactive-scene)
